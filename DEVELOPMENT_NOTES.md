@@ -1,60 +1,50 @@
 # Development notes
 
-Carried-over open items from earlier dev journals (PLAN_V3.md and
-SUMMARY.md, both deliberately not migrated). Most are "polish before
-external consumers care" — useful reading if you're touching the
-relevant area.
+Open polish items. Most are nice-to-haves rather than blockers.
 
 ## Per-language polish
 
-### Go (`exports/lib/segman-go/`)
+### Go (`go/`)
 
-- [ ] Verify Go module structure is correct for external `go get`.
-- [ ] Confirm `go.mod` is configured for the public import path
-      (`github.com/slackwing/segman/...` once the repo layout settles).
-- [ ] Add `func Version() string` exported publicly (today it's only
-      used internally).
+- [x] Module path normalized to `github.com/slackwing/segman/go`.
+- [x] Public `Version` constant exported.
 - [ ] `go/examples/` with at least one runnable example.
 - [ ] Add godoc comments on the public surface.
 
-### JavaScript (`exports/lib/segman-js/`)
+### JavaScript (`js/`)
 
-- [ ] Add `package.json` (today there is none — segman.js is consumed
-      as a vendored file).
-- [ ] Decide on `module.exports` vs ESM. CommonJS is fine for
-      vendor-by-copy; ESM matters if/when this is published.
-- [ ] Export `getVersion()` from the public surface.
-- [ ] JSDoc on the public surface.
+- [x] Public `VERSION` constant exported.
+- [x] Browser + Node export shape is consistent (`window.segman` namespace
+      + top-level `segment` global; CommonJS via `module.exports`).
+- [ ] `package.json` for the lib (today there is none — segman.js is
+      consumed as a vendored file). Decide whether to publish to npm.
+- [ ] If publishing: ESM build alongside CJS.
 - [ ] `js/examples/` with at least one runnable example.
+- [ ] JSDoc on the public surface.
 
-### Rust (`exports/lib/segman-rust/`)
+### Rust (`rust/`)
 
-- [ ] Verify `Cargo.toml` has correct library configuration for
-      external use.
-- [ ] Add `pub fn version() -> &'static str`.
-- [ ] Confirm public API surface is what we want (no accidental
-      `pub` on internal items).
-- [ ] Rustdoc on the public surface.
+- [x] `pub const VERSION: &str = env!("CARGO_PKG_VERSION")` — version
+      sourced from Cargo.toml at compile time.
+- [x] Crate version bumped to 1.0.0 to match the cross-language version.
 - [ ] `rust/examples/` with at least one runnable example.
-- [ ] Decide whether the `segment-manuscript` binary stays in this
-      crate or moves to a separate CLI crate.
+- [ ] Rustdoc on the public surface.
+- [ ] Confirm the public API surface is what we want (no accidental
+      `pub` on internals).
 
-## Build / release
+## Repo-wide
 
-- [ ] Decide on a versioned-release process beyond just bumping
-      `VERSION.json` (tags? a changelog? a release script?).
-- [ ] Pre-commit hook auto-staging policy for VERSION.json bumps.
+- [ ] CHANGELOG.md or per-release GitHub release notes.
+- [ ] CI: run `./run-tests` on push (segmenter parity is currently
+      enforced by hand only).
+- [ ] Decide: are CLIs in `tools/scripts/build-clis.sh`'s output
+      something a user would want pre-built and tagged in releases? For
+      now they're build-on-demand only.
 
-## Phase 6 (deep refactor) candidates
+## Pre-commit hook
 
-These came up during the manuscript-studio vendoring extraction and
-deserve their own pass:
-
-- [ ] Flatten the `src/` + `exports/lib/` split. Today the source
-      lives in `src/segman/{go,js,rust}` and the build output is
-      copied to `exports/lib/segman-{go,js,rust}`. For a library
-      repo, having those be the same directory (or having `lib/`
-      be the source-of-truth) is more conventional and less
-      confusing for consumers.
-- [ ] README.md at repo root with install + usage + version policy.
-- [ ] Per-language `CHANGELOG.md` or a single root one — pick one.
+The old setup had a pre-commit hook that auto-bumped the patch version
+and re-generated reference output when the segmenter changed. That
+machinery isn't carried into this layout. Replacement: do the bump
+manually via `tools/scripts/bump-version.sh`. If the auto-bump becomes
+genuinely useful again, restore as a hook in `.git/hooks/pre-commit`.

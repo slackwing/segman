@@ -1,0 +1,18 @@
+# Rust
+target/
+**/Cargo.lock.lock
+
+# Built binaries / artifacts — built on demand, never committed
+exports/
+*.exe
+
+# Editor noise
+.DS_Store
+*~
+*.swp
+.vscode/
+.idea/
+
+# Test/scratch
+/tmp/
+dist/

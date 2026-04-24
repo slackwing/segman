@@ -1,25 +1,23 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+#
+# Run segman tests. Usage:
+#   ./run-tests           # all languages
+#   ./run-tests go        # one language
+#   ./run-tests js
+#   ./run-tests rust
 
-# Default to go if no language specified
-LANG="${1:-go}"
+set -euo pipefail
 
-case "$LANG" in
-    go)
-        cd "$(dirname "$0")/src/segman/go"
-        go test -v
-        ;;
-    js)
-        cd "$(dirname "$0")/src/segman/js"
-        node segman_test.js
-        ;;
-    rust)
-        cd "$(dirname "$0")/src/segman/rust"
-        cargo test -- --nocapture
-        ;;
-    *)
-        echo "Usage: $0 [go|js|rust]"
-        echo "  Default: go"
-        exit 1
-        ;;
+cd "$(dirname "$0")"
+
+run_go()   { echo "== Go ==";   (cd go && go test -v); }
+run_js()   { echo "== JS ==";   (cd js && node segman_test.js); }
+run_rust() { echo "== Rust =="; (cd rust && cargo test -- --nocapture); }
+
+case "${1:-all}" in
+    go)   run_go ;;
+    js)   run_js ;;
+    rust) run_rust ;;
+    all)  run_go; echo; run_js; echo; run_rust ;;
+    *)    echo "usage: $0 [go|js|rust|all]"; exit 2 ;;
 esac
