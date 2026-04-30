@@ -15,14 +15,16 @@ Current version: **1.0.0**
 
 ```
 segman/
-├── go/         Go library + CLI (import "github.com/slackwing/segman/go")
-├── js/         JavaScript library + CLI (CommonJS + browser globals)
-├── rust/       Rust crate (segman) + CLI binary
-├── tests/      scenarios.jsonl — language-agnostic regression corpus
-├── reference/  the-wildfire.manuscript — full manuscript test fixture
-├── tools/      Dev tools (manuscript prep, scenario building, build scripts)
-├── run-tests   Top-level test runner
-└── VERSION.json  Single source of truth for the cross-language version string
+├── go/             Go library + CLI (import "github.com/slackwing/segman/go")
+├── js/             JavaScript library + CLI (CommonJS + browser globals)
+├── rust/           Rust crate (segman) + CLI binary
+├── tests/          scenarios.jsonl — language-agnostic regression corpus
+├── reference/      the-wildfire.manuscript — full manuscript test fixture
+├── tools/          Dev tools (manuscript prep, scenario building, build scripts)
+├── integrations/   Drop-in integrations for downstream consumers
+│   └── git-hook/   pre-commit hook for manuscript repos (see below)
+├── run-tests       Top-level test runner
+└── VERSION.json    Single source of truth for the cross-language version string
 ```
 
 ## Using it
@@ -72,6 +74,23 @@ if a bug fix changes a rule. Consumers that key downstream data off
 segment outputs (sentence IDs, etc.) should record which version
 produced their data and treat outputs from different versions as
 non-comparable without rebuilding.
+
+## Integrations
+
+### git pre-commit hook for manuscript repos
+
+If you keep your prose in a git repo, the `integrations/git-hook/`
+directory has a drop-in `pre-commit` hook that re-runs segman on every
+commit and writes a sentence-per-line `<name>.segman` next to each
+`<name>.manuscript`. The `.segman` file goes into the same commit, so
+GitHub diffs (and any line-based diff tool) show you exactly which
+sentences changed instead of highlighting whole paragraphs.
+
+The hook downloads a precompiled `segman-cli` binary from the GitHub
+Releases page on first run and caches it. No language runtime
+required — works on a poet's laptop the same as a developer's.
+
+See `integrations/git-hook/README.md` for install instructions.
 
 ## Building
 

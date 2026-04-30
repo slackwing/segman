@@ -1,0 +1,82 @@
+# Cuts a GitHub Release on every `v*` tag and uploads precompiled
+# segman-cli binaries for the five (OS, arch) combos most contributors
+# will be on. Consumers who want segman in a git hook can `curl` the
+# right binary at runtime — see integrations/git-hook/.
+#
+# To cut a release:
+#   tools/scripts/bump-version.sh X.Y.Z
+#   git commit -am "release vX.Y.Z"
+#   git tag -a vX.Y.Z -m "vX.Y.Z"
+#   git push && git push --tags
+#
+# Tests are not re-run here — they run in test.yml on every push.
+
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: darwin
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache-dependency-path: go/go.sum
+
+      - name: Build segman-cli for ${{ matrix.goos }}/${{ matrix.goarch }}
+        working-directory: go
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          ext=""
+          if [ "$GOOS" = "windows" ]; then ext=".exe"; fi
+          out="../segman-cli-${GOOS}-${GOARCH}${ext}"
+          go build -trimpath -ldflags="-s -w" -o "$out" ./cmd/segman
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: segman-cli-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: segman-cli-*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Sanity-check artifacts
+        run: ls -la dist/
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/segman-cli-*
+          generate_release_notes: true
+          fail_on_unmatched_files: true

@@ -656,7 +656,7 @@ function splitAtBoundaries(chars, boundaries) {
 
 // segman version. Bumped by tools/bump-version.sh alongside go/segman.go,
 // rust/Cargo.toml, and the root VERSION.json so all four stay in lockstep.
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 
 // Export for both Node (CommonJS) and the browser. In the browser we
 // expose a `window.segman` namespace AND keep `segment` as a top-level

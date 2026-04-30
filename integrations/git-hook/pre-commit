@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+#
+# segman pre-commit hook.
+#
+# For every staged *.manuscript file, regenerates a sibling
+# <name>.segman containing one sentence per line, and stages it as part
+# of the same commit. This keeps diffs at the sentence level, which is
+# much easier to review than diffs of long paragraphs.
+#
+# Pinned to one segman version per repo via SEGMAN_VERSION below; bump
+# to upgrade. The first commit on a fresh machine downloads the
+# matching segman-cli binary into ~/.cache/segman/<version>/ (≈3 MB).
+# Subsequent commits run the cached binary — no network.
+#
+# Fails the commit on any error (download failure, segman crash, etc.).
+# Bypass intentionally with `git commit --no-verify` when needed.
+#
+# Install: see integrations/git-hook/README.md in github.com/slackwing/segman.
+
+set -euo pipefail
+
+SEGMAN_VERSION="v1.1.0"
+
+# --- Locate / download the binary -----------------------------------------
+
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/segman/$SEGMAN_VERSION"
+mkdir -p "$CACHE_DIR"
+
+detect_target() {
+    local os arch
+    os=$(uname -s | tr '[:upper:]' '[:lower:]')
+    arch=$(uname -m)
+    case "$arch" in
+        x86_64|amd64) arch=amd64 ;;
+        aarch64|arm64) arch=arm64 ;;
+        *) echo "segman: unsupported architecture: $arch" >&2; exit 1 ;;
+    esac
+    case "$os" in
+        linux|darwin) ;;
+        mingw*|msys*|cygwin*) os=windows ;;
+        *) echo "segman: unsupported OS: $os" >&2; exit 1 ;;
+    esac
+    echo "$os $arch"
+}
+
+read -r OS ARCH < <(detect_target)
+EXT=""
+[ "$OS" = "windows" ] && EXT=".exe"
+BINARY="$CACHE_DIR/segman-cli-${OS}-${ARCH}${EXT}"
+
+if [ ! -x "$BINARY" ]; then
+    URL="https://github.com/slackwing/segman/releases/download/${SEGMAN_VERSION}/segman-cli-${OS}-${ARCH}${EXT}"
+    echo "segman: downloading $SEGMAN_VERSION for $OS/$ARCH..." >&2
+    if command -v curl >/dev/null 2>&1; then
+        curl --fail --silent --show-error --location --output "$BINARY" "$URL"
+    elif command -v wget >/dev/null 2>&1; then
+        wget --quiet --output-document="$BINARY" "$URL"
+    else
+        echo "segman: need curl or wget to download segman-cli" >&2
+        exit 1
+    fi
+    chmod +x "$BINARY"
+fi
+
+# --- Re-segment any staged manuscript files -------------------------------
+
+# `--diff-filter=ACM` = added, copied, modified — skip deleted files (their
+# .segman sibling is presumably deleted in the same commit).
+mapfile -t MANUSCRIPTS < <(
+    git diff --cached --name-only --diff-filter=ACM | grep -E '\.manuscript$' || true
+)
+
+if [ ${#MANUSCRIPTS[@]} -eq 0 ]; then
+    exit 0
+fi
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+for rel in "${MANUSCRIPTS[@]}"; do
+    abs="$REPO_ROOT/$rel"
+    out="${abs%.manuscript}.segman"
+    "$BINARY" "$abs" > "$out"
+    git add "$out"
+    echo "segman: $rel → $(basename "$out")" >&2
+done
