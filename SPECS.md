@@ -35,7 +35,7 @@
 |---------|-------------|----------------|----------|
 | `\n\n` | Double newline always creates boundary (paragraphs, sections) | 001 | HIGH |
 | `\n\t` | Tab-indented paragraph break always creates boundary | 012 | HIGH |
-| `&`-commands (block) | `&title`/`&part`/`&chapter` — and `&anchor` when it is the sole non-whitespace content of its line — are separate segments (boundary before and after), like headers | 065, 066, 067, 068, 069, 072, 076 | HIGH |
+| `&`-commands (block) | `&title`/`&part`/`&chapter`/`&meta` — and `&anchor` when it is the sole non-whitespace content of its line — are separate segments (boundary before and after), like headers | 065, 066, 067, 068, 069, 072, 076 | HIGH |
 | `&`-commands (inline) | `&anchor` sharing its line with other content, and `&reference` always, stay inside the surrounding sentence (no boundary) | 070, 071, 073 | HIGH |
 | Literal `&` | A `&` not followed by an exact command keyword + `#`/`{` is ordinary prose (e.g. `Smith & Sons`, `R&D`, `A &chapter of accidents`) — never a boundary | 074, 075 | HIGH |
 
@@ -104,7 +104,7 @@
 
 ## Implementation Notes
 
-### V3 Architecture (Current: 58/58 passing, v2.0.0)
+### V3 Architecture (Current: 59/59 passing, v2.1.0)
 
 **3-Phase Pipeline:**
 1. **Mark Nested Structures** - Find all quotes, parens, brackets, italics (position ranges, 1-level only)

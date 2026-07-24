@@ -583,7 +583,7 @@ fn mark_boundaries(chars: &[char], regions: &[NestedRegion]) -> Vec<BoundaryMark
 
 /// The recognized &-command names. A '&' begins a command only when
 /// immediately followed by one of these and then '#' or '{'.
-const COMMAND_KEYWORDS: [&str; 5] = ["title", "part", "chapter", "anchor", "reference"];
+const COMMAND_KEYWORDS: [&str; 6] = ["title", "part", "chapter", "anchor", "reference", "meta"];
 
 /// Reports whether the '&' at index i begins a *block* command — one that is
 /// its own segment. title/part/chapter are always block; anchor is block only

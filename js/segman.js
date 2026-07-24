@@ -604,7 +604,7 @@ function markBoundaries(chars, regions) {
 
 // commandKeywords are the recognized &-command names. A '&' begins a command
 // only when immediately followed by one of these and then '#' or '{'.
-const commandKeywords = ['title', 'part', 'chapter', 'anchor', 'reference'];
+const commandKeywords = ['title', 'part', 'chapter', 'anchor', 'reference', 'meta'];
 
 // isBlockCommandAt reports whether the '&' at index i begins a *block* command
 // — one that is its own segment. title/part/chapter are always block; anchor
@@ -773,7 +773,7 @@ function splitAtBoundaries(chars, boundaries) {
 
 // segman version. Bumped by tools/bump-version.sh alongside go/segman.go,
 // rust/Cargo.toml, and the root VERSION.json so all four stay in lockstep.
-const VERSION = '2.0.0';
+const VERSION = '2.1.0';
 
 // Export for both Node (CommonJS) and the browser. In the browser we
 // expose a `window.segman` namespace AND keep `segment` as a top-level
