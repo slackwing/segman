@@ -546,31 +546,9 @@ fn mark_boundaries(chars: &[char], regions: &[NestedRegion]) -> Vec<BoundaryMark
         }
     }
 
-    // RULE 8: Markdown headers (lines starting with #)
-    for i in 0..chars.len() {
-        if chars[i] == '#' {
-            // Check if this # is at the start of a line (after newline or at position 0)
-            let at_line_start = i == 0 || chars[i - 1] == '\n';
-
-            if at_line_start {
-                // Create boundary before the header (unless at start of text)
-                if i > 0 {
-                    boundaries.push(BoundaryMark { pos: i, reason: "before markdown header" });
-                }
-
-                // Find the end of the header line
-                let mut j = i;
-                while j < chars.len() && chars[j] != '\n' {
-                    j += 1;
-                }
-
-                // Create boundary after the header (at the newline)
-                if j < chars.len() {
-                    boundaries.push(BoundaryMark { pos: j, reason: "after markdown header" });
-                }
-            }
-        }
-    }
+    // RULE 8 (Markdown headers) was REMOVED in v2.0.0. A line starting with
+    // '#' is now ordinary prose; structure is expressed with &-commands
+    // (RULE 9). This is the breaking change that motivates the major bump.
 
     // RULE 9: &-commands. A recognized command token (&title/&part/&chapter
     // always, &anchor when it is the sole non-whitespace content of its line)

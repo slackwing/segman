@@ -567,31 +567,9 @@ function markBoundaries(chars, regions) {
         }
     }
 
-    // RULE 8: Markdown headers (lines starting with #)
-    for (let i = 0; i < chars.length; i++) {
-        if (chars[i] === '#') {
-            // Check if this # is at the start of a line (after newline or at position 0)
-            const atLineStart = i === 0 || chars[i - 1] === '\n';
-
-            if (atLineStart) {
-                // Create boundary before the header (unless at start of text)
-                if (i > 0) {
-                    boundaries.push({ pos: i, reason: 'before markdown header' });
-                }
-
-                // Find the end of the header line
-                let j = i;
-                while (j < chars.length && chars[j] !== '\n') {
-                    j++;
-                }
-
-                // Create boundary after the header (at the newline)
-                if (j < chars.length) {
-                    boundaries.push({ pos: j, reason: 'after markdown header' });
-                }
-            }
-        }
-    }
+    // RULE 8 (Markdown headers) was REMOVED in v2.0.0. A line starting with
+    // '#' is now ordinary prose; structure is expressed with &-commands
+    // (RULE 9). This is the breaking change that motivates the major bump.
 
     // RULE 9: &-commands. A recognized command token (&title/&part/&chapter
     // always, &anchor when it is the sole non-whitespace content of its line)
@@ -795,7 +773,7 @@ function splitAtBoundaries(chars, boundaries) {
 
 // segman version. Bumped by tools/bump-version.sh alongside go/segman.go,
 // rust/Cargo.toml, and the root VERSION.json so all four stay in lockstep.
-const VERSION = '1.2.0';
+const VERSION = '2.0.0';
 
 // Export for both Node (CommonJS) and the browser. In the browser we
 // expose a `window.segman` namespace AND keep `segment` as a top-level
