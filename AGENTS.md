@@ -60,7 +60,7 @@ under `tools/scripts/` produce these on demand.
 1. Create `<lang>/` at repo root with the implementation.
 2. Add a case to `run-tests`.
 3. Implement Segment + VERSION exports matching the existing public API.
-4. Verify all 45 scenarios pass.
+4. Verify all scenarios pass (currently 57).
 5. Update README's per-language table.
 
 ## Workflow when the user adds a scenario

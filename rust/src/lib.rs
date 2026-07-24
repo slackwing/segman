@@ -572,7 +572,146 @@ fn mark_boundaries(chars: &[char], regions: &[NestedRegion]) -> Vec<BoundaryMark
         }
     }
 
+    // RULE 9: &-commands. A recognized command token (&title/&part/&chapter
+    // always, &anchor when it is the sole non-whitespace content of its line)
+    // is its own segment, boundaried before and after like a header. &anchor
+    // sharing its line with other content, and &reference always, stay inline
+    // (no boundary). Recognition and inline/block are decided here (boundaries
+    // only); the consuming application parses the command's fields.
+    for i in 0..chars.len() {
+        if chars[i] != '&' {
+            continue;
+        }
+        if !is_block_command_at(&chars, i) {
+            continue;
+        }
+        // Boundary before the command (unless at start of text). The command's
+        // line may be indented, so boundary at the first non-whitespace char.
+        if i > 0 {
+            boundaries.push(BoundaryMark { pos: i, reason: "before &command" });
+        }
+        // Boundary after the command line (at its terminating newline).
+        let mut j = i;
+        while j < chars.len() && chars[j] != '\n' {
+            j += 1;
+        }
+        if j < chars.len() {
+            boundaries.push(BoundaryMark { pos: j, reason: "after &command" });
+        }
+    }
+
     boundaries
+}
+
+/// The recognized &-command names. A '&' begins a command only when
+/// immediately followed by one of these and then '#' or '{'.
+const COMMAND_KEYWORDS: [&str; 5] = ["title", "part", "chapter", "anchor", "reference"];
+
+/// Reports whether the '&' at index i begins a *block* command — one that is
+/// its own segment. title/part/chapter are always block; anchor is block only
+/// when it is the sole non-whitespace content of its physical line; reference
+/// is never block (always inline). A non-command '&' (literal ampersand in
+/// prose) returns false.
+fn is_block_command_at(chars: &[char], i: usize) -> bool {
+    match command_keyword_at(chars, i) {
+        None => false,
+        Some("reference") => false,
+        Some("anchor") => command_is_sole_line_content(chars, i),
+        Some(_) => true, // title, part, chapter
+    }
+}
+
+/// Returns the command keyword the '&' at index i introduces, or None if this
+/// is not a command. A command is '&' + exact keyword + ('#' or '{'); anything
+/// else (e.g. "Smith & Sons", "R&D") is literal.
+fn command_keyword_at(chars: &[char], i: usize) -> Option<&'static str> {
+    for kw in COMMAND_KEYWORDS.iter() {
+        let end = i + 1 + kw.len();
+        if end >= chars.len() {
+            continue;
+        }
+        let matches = chars[i + 1..end].iter().collect::<String>() == *kw;
+        if !matches {
+            continue;
+        }
+        if chars[end] == '#' || chars[end] == '{' {
+            return Some(*kw);
+        }
+    }
+    None
+}
+
+/// Reports whether the command token starting at index i is the only
+/// non-whitespace content of its physical line (leading indent and trailing
+/// spaces ignored). Used to decide whether an &anchor is block.
+fn command_is_sole_line_content(chars: &[char], i: usize) -> bool {
+    // Everything from the line start up to i must be whitespace.
+    let mut k = i;
+    while k > 0 && chars[k - 1] != '\n' {
+        k -= 1;
+        if chars[k] != ' ' && chars[k] != '\t' && chars[k] != '\r' {
+            return false;
+        }
+    }
+    // Find the matching close of the final {...} arg, then require only
+    // whitespace to the end of the line.
+    let end = match command_token_end(chars, i) {
+        Some(e) => e,
+        None => return false,
+    };
+    let mut k = end;
+    while k < chars.len() && chars[k] != '\n' {
+        if chars[k] != ' ' && chars[k] != '\t' && chars[k] != '\r' {
+            return false;
+        }
+        k += 1;
+    }
+    true
+}
+
+/// Returns the index just past the command token starting at i (past its last
+/// '}'), or None if the braces are unbalanced. It scans the optional #slug and
+/// one or more {...} arg groups, tracking brace depth.
+fn command_token_end(chars: &[char], i: usize) -> Option<usize> {
+    let mut k = i + 1;
+    // keyword
+    while k < chars.len() && chars[k] != '#' && chars[k] != '{' {
+        k += 1;
+    }
+    // optional #slug
+    if k < chars.len() && chars[k] == '#' {
+        k += 1;
+        while k < chars.len() && chars[k] != '{' && chars[k] != '\n' {
+            k += 1;
+        }
+    }
+    // one or more {...} groups, back to back
+    let mut saw_group = false;
+    while k < chars.len() && chars[k] == '{' {
+        let mut depth = 0;
+        while k < chars.len() {
+            if chars[k] == '{' {
+                depth += 1;
+            } else if chars[k] == '}' {
+                depth -= 1;
+                if depth == 0 {
+                    k += 1;
+                    break;
+                }
+            } else if chars[k] == '\n' {
+                return None; // unterminated group
+            }
+            k += 1;
+        }
+        if depth != 0 {
+            return None;
+        }
+        saw_group = true;
+    }
+    if !saw_group {
+        return None;
+    }
+    Some(k)
 }
 
 /// Splits the text at marked boundaries

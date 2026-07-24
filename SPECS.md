@@ -36,6 +36,9 @@
 | `\n\n` | Double newline always creates boundary (paragraphs, sections) | 001 | HIGH |
 | `\n\t` | Tab-indented paragraph break always creates boundary | 012 | HIGH |
 | Markdown headers | Lines starting with `#` are separate segments (boundary before and after) | 001, 057 | HIGH |
+| `&`-commands (block) | `&title`/`&part`/`&chapter` — and `&anchor` when it is the sole non-whitespace content of its line — are separate segments (boundary before and after), like headers | 065, 066, 067, 068, 069, 072, 076 | HIGH |
+| `&`-commands (inline) | `&anchor` sharing its line with other content, and `&reference` always, stay inside the surrounding sentence (no boundary) | 070, 071, 073 | HIGH |
+| Literal `&` | A `&` not followed by an exact command keyword + `#`/`{` is ordinary prose (e.g. `Smith & Sons`, `R&D`, `A &chapter of accidents`) — never a boundary | 074, 075 | HIGH |
 
 ### 2. Dialogue & Quotation Rules
 
@@ -102,11 +105,11 @@
 
 ## Implementation Notes
 
-### V3 Architecture (Current: 45/45 passing)
+### V3 Architecture (Current: 57/57 passing)
 
 **3-Phase Pipeline:**
 1. **Mark Nested Structures** - Find all quotes, parens, brackets, italics (position ranges, 1-level only)
-2. **Mark Boundaries** - Apply 8 rules to identify split points (respecting nested regions)
+2. **Mark Boundaries** - Apply 9 rules to identify split points (respecting nested regions)
 3. **Split & Normalize** - Split at boundaries, normalize internal whitespace to spaces
 
 **Critical details:**
@@ -117,6 +120,7 @@
 - **Editorial brackets:** `[...]` inside quotes/parens/italics do NOT create boundaries (protected by nested region detection)
 - **Paragraph breaks:** Both `\n\n` and `\n\t` (when not dialogue) create boundaries
 - **Markdown headers:** Lines starting with `#` create boundaries before and after
+- **`&`-commands:** A `&` begins a command only when immediately followed by an exact keyword (`title`, `part`, `chapter`, `anchor`, `reference`) and then `#` or `{`. `title`/`part`/`chapter` always boundary before and after (own segment); `anchor` boundaries only when it is the sole non-whitespace content of its line (leading indent / trailing spaces ignored), otherwise it stays inline; `reference` never boundaries. Any other `&` is literal prose. segman decides boundaries only — the command's fields are parsed by the consuming application.
 
 ### Quote Classification
 - **Standalone dialogue**: Quote on own line (`\n\t"..."`) without attribution before
@@ -215,7 +219,10 @@
 
 | Rule Category | Scenarios Testing This Pattern |
 |---------------|--------------------------------|
-| Markdown headers | 001, 017, 018 |
+| Markdown headers | 001, 017, 018, 076 |
+| `&`-commands (block) | 065, 066, 067, 068, 069, 072 |
+| `&`-commands (inline) | 070, 071, 073 |
+| Literal `&` (not a command) | 074, 075 |
 | Double newline `\n\n` | 001 |
 | Newline + tab `\n\t` | 004, 005 |
 | Ellipsis `...` | 002, 006, 038, 039, 040, 042 |
@@ -248,4 +255,5 @@
 | 2026-03-24 | Period after attribution | Clarified period AFTER attribution ends sentence | 023, 024 |
 | 2026-03-25 | V3 complete (100%) | 3-phase architecture with whitespace normalization | All 36 |
 | 2026-03-27 | Editorial brackets protected | Fixed RULE 1: Brackets inside quotes/parens/italics don't create boundaries | 062, 063, 064 |
+| 2026-07-24 | RULE 9: `&`-commands | Added structural `&`-command boundaries (block/inline) alongside `#` headers; additive, `#` unchanged. Derived from reference/the-wildfire-v2.manuscript | 065-076 |
 | 2026-03-27 | More abbreviations | Added comprehensive abbreviation list (time, titles, Latin, locations, months, days, business) | 059, 060, 061 |

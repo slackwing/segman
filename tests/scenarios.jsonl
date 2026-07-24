@@ -43,3 +43,15 @@
 {"id":"062","context":"\t\"Ah. Well, whenever you decide to come in, [...]\"\n\tThen you went inside.","expected":"\"Ah. Well, whenever you decide to come in, [...]\""}
 {"id":"063","context":"I exited the Uber without looking.\n\t[...]\n\t\"Yo! Heard you were in town, come over tonight!\"","expected":"[...]"}
 {"id":"064","context":"\"Later.\"\n\t[Bring back optimistic energy on the flight.]\n\t[...]","expected":"[Bring back optimistic energy on the flight.]"}
+{"id":"065","context":"\u0026title{The Wildfire}\n\n\u0026part#p1{I.}{The Gathering}","expected":"\u0026title{The Wildfire}"}
+{"id":"066","context":"\u0026part#p1{I.}{The Gathering}\n\n\u0026chapter#p1c1","expected":"\u0026part#p1{I.}{The Gathering}"}
+{"id":"067","context":"\u0026chapter#p1c1{1.}{Smoke on the ridge}\n\nThe fire began","expected":"\u0026chapter#p1c1{1.}{Smoke on the ridge}"}
+{"id":"068","context":"\u0026chapter#p1c1{1.}{Smoke on the ridge}\n\nThe fire began at dawn. It spread across the ridge before","expected":"\u0026chapter#p1c1{1.}{Smoke on the ridge}"}
+{"id":"069","context":"\u0026anchor#lookback{a still moment}\n\nThey spoke of the smoke","expected":"\u0026anchor#lookback{a still moment}"}
+{"id":"070","context":"She walked the burned line at dusk. \u0026anchor#origin{where it all begins} The ground was still warm under her boots.\n\n\u0026anchor#lookback{a still moment}\n\nThey spoke of the smoke","expected":"She walked the burned line at dusk. \u0026anchor#origin{where it all begins} The ground was still warm under her boots."}
+{"id":"071","context":"They spoke of the smoke for years. The fire \u0026anchor#firemark{} had a shape people remembered. Smith \u0026 Sons rebuilt","expected":"The fire \u0026anchor#firemark{} had a shape people remembered."}
+{"id":"072","context":"\u0026chapter#p2c2{2.}{Threads} \u0026anchor#thread{tie-off}\n\nThe letters came","expected":"\u0026chapter#p2c2{2.}{Threads} \u0026anchor#thread{tie-off}"}
+{"id":"073","context":"befell them on the road north. See \u0026reference#origin{the opening} for how it started.\n\n\u0026chapter#p2c2","expected":"See \u0026reference#origin{the opening} for how it started."}
+{"id":"074","context":"Smith \u0026 Sons rebuilt the mill that autumn, and the R\u0026D team studied the burn scars.\n\n\u0026part#p2{II.}{The Return}","expected":"Smith \u0026 Sons rebuilt the mill that autumn, and the R\u0026D team studied the burn scars."}
+{"id":"075","context":"A \u0026chapter of accidents befell them on the road north. See \u0026reference#origin","expected":"A \u0026chapter of accidents befell them on the road north."}
+{"id":"076","context":"# An old markdown header\n\nThis paragraph still segments","expected":"# An old markdown header"}

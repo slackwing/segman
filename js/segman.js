@@ -593,7 +593,146 @@ function markBoundaries(chars, regions) {
         }
     }
 
+    // RULE 9: &-commands. A recognized command token (&title/&part/&chapter
+    // always, &anchor when it is the sole non-whitespace content of its line)
+    // is its own segment, boundaried before and after like a header. &anchor
+    // sharing its line with other content, and &reference always, stay inline
+    // (no boundary). Recognition and inline/block are decided here (boundaries
+    // only); the consuming application parses the command's fields.
+    for (let i = 0; i < chars.length; i++) {
+        if (chars[i] !== '&') {
+            continue;
+        }
+        if (!isBlockCommandAt(chars, i)) {
+            continue;
+        }
+        // Boundary before the command (unless at start of text). The command's
+        // line may be indented, so boundary at the first non-whitespace char.
+        if (i > 0) {
+            boundaries.push({ pos: i, reason: 'before &command' });
+        }
+        // Boundary after the command line (at its terminating newline).
+        let j = i;
+        while (j < chars.length && chars[j] !== '\n') {
+            j++;
+        }
+        if (j < chars.length) {
+            boundaries.push({ pos: j, reason: 'after &command' });
+        }
+    }
+
     return boundaries;
+}
+
+// commandKeywords are the recognized &-command names. A '&' begins a command
+// only when immediately followed by one of these and then '#' or '{'.
+const commandKeywords = ['title', 'part', 'chapter', 'anchor', 'reference'];
+
+// isBlockCommandAt reports whether the '&' at index i begins a *block* command
+// — one that is its own segment. title/part/chapter are always block; anchor
+// is block only when it is the sole non-whitespace content of its physical
+// line; reference is never block (always inline). A non-command '&' (literal
+// ampersand in prose) returns false.
+function isBlockCommandAt(chars, i) {
+    const kw = commandKeywordAt(chars, i);
+    if (kw === '') {
+        return false;
+    }
+    if (kw === 'reference') {
+        return false;
+    }
+    if (kw === 'anchor') {
+        return commandIsSoleLineContent(chars, i);
+    }
+    return true; // title, part, chapter
+}
+
+// commandKeywordAt returns the command keyword the '&' at index i introduces,
+// or '' if this is not a command. A command is '&' + exact keyword + ('#' or
+// '{'); anything else (e.g. "Smith & Sons", "R&D") is literal.
+function commandKeywordAt(chars, i) {
+    for (const kw of commandKeywords) {
+        const end = i + 1 + kw.length;
+        if (end >= chars.length) {
+            continue;
+        }
+        if (chars.slice(i + 1, end).join('') !== kw) {
+            continue;
+        }
+        if (chars[end] === '#' || chars[end] === '{') {
+            return kw;
+        }
+    }
+    return '';
+}
+
+// commandIsSoleLineContent reports whether the command token starting at index
+// i is the only non-whitespace content of its physical line (leading indent
+// and trailing spaces ignored). Used to decide whether an &anchor is block.
+function commandIsSoleLineContent(chars, i) {
+    // Everything from the line start up to i must be whitespace.
+    for (let k = i - 1; k >= 0 && chars[k] !== '\n'; k--) {
+        if (chars[k] !== ' ' && chars[k] !== '\t' && chars[k] !== '\r') {
+            return false;
+        }
+    }
+    // Find the matching close of the final {...} arg, then require only
+    // whitespace to the end of the line.
+    const end = commandTokenEnd(chars, i);
+    if (end < 0) {
+        return false;
+    }
+    for (let k = end; k < chars.length && chars[k] !== '\n'; k++) {
+        if (chars[k] !== ' ' && chars[k] !== '\t' && chars[k] !== '\r') {
+            return false;
+        }
+    }
+    return true;
+}
+
+// commandTokenEnd returns the index just past the command token starting at i
+// (past its last '}'), or -1 if the braces are unbalanced. It scans the
+// optional #slug and one or more {...} arg groups, tracking brace depth.
+function commandTokenEnd(chars, i) {
+    let k = i + 1;
+    // keyword
+    while (k < chars.length && chars[k] !== '#' && chars[k] !== '{') {
+        k++;
+    }
+    // optional #slug
+    if (k < chars.length && chars[k] === '#') {
+        k++;
+        while (k < chars.length && chars[k] !== '{' && chars[k] !== '\n') {
+            k++;
+        }
+    }
+    // one or more {...} groups, back to back
+    let sawGroup = false;
+    while (k < chars.length && chars[k] === '{') {
+        let depth = 0;
+        while (k < chars.length) {
+            if (chars[k] === '{') {
+                depth++;
+            } else if (chars[k] === '}') {
+                depth--;
+                if (depth === 0) {
+                    k++;
+                    break;
+                }
+            } else if (chars[k] === '\n') {
+                return -1; // unterminated group
+            }
+            k++;
+        }
+        if (depth !== 0) {
+            return -1;
+        }
+        sawGroup = true;
+    }
+    if (!sawGroup) {
+        return -1;
+    }
+    return k;
 }
 
 /**
@@ -656,7 +795,7 @@ function splitAtBoundaries(chars, boundaries) {
 
 // segman version. Bumped by tools/bump-version.sh alongside go/segman.go,
 // rust/Cargo.toml, and the root VERSION.json so all four stay in lockstep.
-const VERSION = '1.1.1';
+const VERSION = '1.2.0';
 
 // Export for both Node (CommonJS) and the browser. In the browser we
 // expose a `window.segman` namespace AND keep `segment` as a top-level

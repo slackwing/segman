@@ -1,0 +1,29 @@
+&title{The Wildfire}
+
+&part#p1{I.}{The Gathering}
+
+&chapter#p1c1{1.}{Smoke on the ridge}
+
+The fire began at dawn. It spread across the ridge before anyone woke. By noon the whole valley was gone.
+
+&chapter#p1c2{2.}{Ash and after}
+
+She walked the burned line at dusk. &anchor#origin{where it all begins} The ground was still warm under her boots.
+
+&anchor#lookback{a still moment}
+
+They spoke of the smoke for years. The fire &anchor#firemark{} had a shape people remembered. Smith & Sons rebuilt the mill that autumn, and the R&D team studied the burn scars.
+
+&part#p2{II.}{The Return}
+
+&chapter#p2c1{1.}{New York, later}
+
+A &chapter of accidents befell them on the road north. See &reference#origin{the opening} for how it started.
+
+&chapter#p2c2{2.}{Threads} &anchor#thread{tie-off}
+
+The letters came in a bundle. She read them out of order.
+
+# An old markdown header
+
+This paragraph still segments the old way. The header above is a legacy Markdown heading.
