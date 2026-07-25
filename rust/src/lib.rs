@@ -551,11 +551,12 @@ fn mark_boundaries(chars: &[char], regions: &[NestedRegion]) -> Vec<BoundaryMark
     // (RULE 9). This is the breaking change that motivates the major bump.
 
     // RULE 9: &-commands. A recognized command token (&title/&part/&chapter
-    // always, &anchor when it is the sole non-whitespace content of its line)
-    // is its own segment, boundaried before and after like a header. &anchor
-    // sharing its line with other content, and &reference always, stay inline
-    // (no boundary). Recognition and inline/block are decided here (boundaries
-    // only); the consuming application parses the command's fields.
+    // always, &anchor/&placeholder when it is the sole non-whitespace content
+    // of its line) is its own segment, boundaried before and after like a
+    // header. &anchor/&placeholder sharing its line with other content, and
+    // &reference always, stay inline (no boundary). Recognition and
+    // inline/block are decided here (boundaries only); the consuming
+    // application parses the command's fields.
     for i in 0..chars.len() {
         if chars[i] != '&' {
             continue;
@@ -578,23 +579,45 @@ fn mark_boundaries(chars: &[char], regions: &[NestedRegion]) -> Vec<BoundaryMark
         }
     }
 
+    // RULE 10: a recognized &-command token is atomic — no boundary may land
+    // strictly inside it. Punctuation inside an arg (a &placeholder's details,
+    // a &reference's notes) must not split the token across sentences. RULE
+    // 9's own boundaries are unaffected: "before" sits AT the token start and
+    // "after" sits at the newline past its final '}', both outside (start,
+    // end) exclusive.
+    let mut protected: Vec<(usize, usize)> = Vec::new();
+    let mut i = 0;
+    while i < chars.len() {
+        if chars[i] == '&' && command_keyword_at(&chars, i).is_some() {
+            if let Some(end) = command_token_end(&chars, i) {
+                protected.push((i, end));
+                i = end;
+                continue;
+            }
+        }
+        i += 1;
+    }
+    if !protected.is_empty() {
+        boundaries.retain(|b| !protected.iter().any(|&(s, e)| b.pos > s && b.pos < e));
+    }
+
     boundaries
 }
 
 /// The recognized &-command names. A '&' begins a command only when
 /// immediately followed by one of these and then '#' or '{'.
-const COMMAND_KEYWORDS: [&str; 6] = ["title", "part", "chapter", "anchor", "reference", "meta"];
+const COMMAND_KEYWORDS: [&str; 7] = ["title", "part", "chapter", "anchor", "reference", "meta", "placeholder"];
 
 /// Reports whether the '&' at index i begins a *block* command — one that is
-/// its own segment. title/part/chapter are always block; anchor is block only
-/// when it is the sole non-whitespace content of its physical line; reference
-/// is never block (always inline). A non-command '&' (literal ampersand in
-/// prose) returns false.
+/// its own segment. title/part/chapter are always block; anchor and
+/// placeholder are block only when they are the sole non-whitespace content
+/// of their physical line; reference is never block (always inline). A
+/// non-command '&' (literal ampersand in prose) returns false.
 fn is_block_command_at(chars: &[char], i: usize) -> bool {
     match command_keyword_at(chars, i) {
         None => false,
         Some("reference") => false,
-        Some("anchor") => command_is_sole_line_content(chars, i),
+        Some("anchor") | Some("placeholder") => command_is_sole_line_content(chars, i),
         Some(_) => true, // title, part, chapter
     }
 }

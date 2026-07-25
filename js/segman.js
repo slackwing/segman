@@ -149,7 +149,7 @@ function findItalics(chars) {
  * markBoundaries identifies all positions where sentences should split
  */
 function markBoundaries(chars, regions) {
-    const boundaries = [];
+    let boundaries = [];
 
     // Helper: check if position is inside a nested region
     const insideNested = (pos) => {
@@ -572,11 +572,12 @@ function markBoundaries(chars, regions) {
     // (RULE 9). This is the breaking change that motivates the major bump.
 
     // RULE 9: &-commands. A recognized command token (&title/&part/&chapter
-    // always, &anchor when it is the sole non-whitespace content of its line)
-    // is its own segment, boundaried before and after like a header. &anchor
-    // sharing its line with other content, and &reference always, stay inline
-    // (no boundary). Recognition and inline/block are decided here (boundaries
-    // only); the consuming application parses the command's fields.
+    // always, &anchor/&placeholder when it is the sole non-whitespace content
+    // of its line) is its own segment, boundaried before and after like a
+    // header. &anchor/&placeholder sharing its line with other content, and
+    // &reference always, stay inline (no boundary). Recognition and
+    // inline/block are decided here (boundaries only); the consuming
+    // application parses the command's fields.
     for (let i = 0; i < chars.length; i++) {
         if (chars[i] !== '&') {
             continue;
@@ -599,18 +600,40 @@ function markBoundaries(chars, regions) {
         }
     }
 
+    // RULE 10: a recognized &-command token is atomic — no boundary may land
+    // strictly inside it. Punctuation inside an arg (a &placeholder's details,
+    // a &reference's notes) must not split the token across sentences. RULE
+    // 9's own boundaries are unaffected: "before" sits AT the token start and
+    // "after" sits at the newline past its final '}', both outside (start,
+    // end) exclusive.
+    const protectedRanges = [];
+    for (let i = 0; i < chars.length; i++) {
+        if (chars[i] !== '&' || commandKeywordAt(chars, i) === '') {
+            continue;
+        }
+        const end = commandTokenEnd(chars, i);
+        if (end > 0) {
+            protectedRanges.push([i, end]);
+            i = end - 1;
+        }
+    }
+    if (protectedRanges.length > 0) {
+        boundaries = boundaries.filter(b =>
+            !protectedRanges.some(([s, e]) => b.pos > s && b.pos < e));
+    }
+
     return boundaries;
 }
 
 // commandKeywords are the recognized &-command names. A '&' begins a command
 // only when immediately followed by one of these and then '#' or '{'.
-const commandKeywords = ['title', 'part', 'chapter', 'anchor', 'reference', 'meta'];
+const commandKeywords = ['title', 'part', 'chapter', 'anchor', 'reference', 'meta', 'placeholder'];
 
 // isBlockCommandAt reports whether the '&' at index i begins a *block* command
 // — one that is its own segment. title/part/chapter are always block; anchor
-// is block only when it is the sole non-whitespace content of its physical
-// line; reference is never block (always inline). A non-command '&' (literal
-// ampersand in prose) returns false.
+// and placeholder are block only when they are the sole non-whitespace content
+// of their physical line; reference is never block (always inline). A
+// non-command '&' (literal ampersand in prose) returns false.
 function isBlockCommandAt(chars, i) {
     const kw = commandKeywordAt(chars, i);
     if (kw === '') {
@@ -619,7 +642,7 @@ function isBlockCommandAt(chars, i) {
     if (kw === 'reference') {
         return false;
     }
-    if (kw === 'anchor') {
+    if (kw === 'anchor' || kw === 'placeholder') {
         return commandIsSoleLineContent(chars, i);
     }
     return true; // title, part, chapter
@@ -773,7 +796,7 @@ function splitAtBoundaries(chars, boundaries) {
 
 // segman version. Bumped by tools/bump-version.sh alongside go/segman.go,
 // rust/Cargo.toml, and the root VERSION.json so all four stay in lockstep.
-const VERSION = '2.1.0';
+const VERSION = '2.2.0';
 
 // Export for both Node (CommonJS) and the browser. In the browser we
 // expose a `window.segman` namespace AND keep `segment` as a top-level

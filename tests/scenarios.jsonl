@@ -57,3 +57,6 @@
 {"id":"076","context":"# An old markdown header\n\nThis paragraph still segments","expected":"# An old markdown header"}
 {"id":"077","context":"The plan was simple. # not a header anymore, just prose. We moved on.","expected":"The plan was simple. # not a header anymore, just prose."}
 {"id":"078","context":"&meta{chapter-align}{center}\n\nThe story begins here.","expected":"&meta{chapter-align}{center}"}
+{"id":"079","context":"\u0026placeholder#the-argument{paragraphs}{m}{The argument}{She confronts him. He deflects. Three beats, escalating.}\nThe morning after, nobody spoke of it.","expected":"\u0026placeholder#the-argument{paragraphs}{m}{The argument}{She confronts him. He deflects. Three beats, escalating.}"}
+{"id":"080","context":"She bought the ticket without admitting why. \u0026placeholder#reunion{sentences}{l}{Reunion beat}{They finally meet. Keep it wordless.} The stationmaster remembered him.","expected":"She bought the ticket without admitting why. \u0026placeholder#reunion{sentences}{l}{Reunion beat}{They finally meet. Keep it wordless.} The stationmaster remembered him."}
+{"id":"081","context":"The bundle also cited \u0026reference#origin{the opening. Of everything.} in a margin note.","expected":"The bundle also cited \u0026reference#origin{the opening. Of everything.} in a margin note."}
