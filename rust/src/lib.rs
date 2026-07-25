@@ -606,7 +606,12 @@ fn mark_boundaries(chars: &[char], regions: &[NestedRegion]) -> Vec<BoundaryMark
 
 /// The recognized &-command names. A '&' begins a command only when
 /// immediately followed by one of these and then '#' or '{'.
-const COMMAND_KEYWORDS: [&str; 7] = ["title", "part", "chapter", "anchor", "reference", "meta", "placeholder"];
+const COMMAND_KEYWORDS: [&str; 8] = ["title", "part", "chapter", "anchor", "reference", "meta", "placeholder", "end"];
+
+/// Reports whether c is in the #slug charset [a-z0-9-].
+fn is_slug_char(c: char) -> bool {
+    c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-'
+}
 
 /// Reports whether the '&' at index i begins a *block* command — one that is
 /// its own segment. title/part/chapter are always block; anchor and
@@ -617,7 +622,7 @@ fn is_block_command_at(chars: &[char], i: usize) -> bool {
     match command_keyword_at(chars, i) {
         None => false,
         Some("reference") => false,
-        Some("anchor") | Some("placeholder") => command_is_sole_line_content(chars, i),
+        Some("anchor") | Some("placeholder") | Some("end") => command_is_sole_line_content(chars, i),
         Some(_) => true, // title, part, chapter
     }
 }
@@ -679,15 +684,31 @@ fn command_token_end(chars: &[char], i: usize) -> Option<usize> {
     while k < chars.len() && chars[k] != '#' && chars[k] != '{' {
         k += 1;
     }
+    let kw: String = chars[i + 1..k].iter().collect();
+    // 'end' is the one keyword whose token is complete with a bare #slug and
+    // no {...} groups (&end#slug). Its slug self-terminates on the slug
+    // charset [a-z0-9-] since no brace delimiter need follow.
+    let mut bare_slug_token = false;
     // optional #slug
     if k < chars.len() && chars[k] == '#' {
         k += 1;
-        while k < chars.len() && chars[k] != '{' && chars[k] != '\n' {
-            k += 1;
+        if kw == "end" {
+            let start = k;
+            while k < chars.len() && is_slug_char(chars[k]) {
+                k += 1;
+            }
+            if k == start {
+                return None; // '&end#' with no slug is not a token
+            }
+            bare_slug_token = true;
+        } else {
+            while k < chars.len() && chars[k] != '{' && chars[k] != '\n' {
+                k += 1;
+            }
         }
     }
     // one or more {...} groups, back to back
-    let mut saw_group = false;
+    let mut saw_group = bare_slug_token;
     while k < chars.len() && chars[k] == '{' {
         let mut depth = 0;
         while k < chars.len() {

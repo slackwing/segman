@@ -627,7 +627,7 @@ function markBoundaries(chars, regions) {
 
 // commandKeywords are the recognized &-command names. A '&' begins a command
 // only when immediately followed by one of these and then '#' or '{'.
-const commandKeywords = ['title', 'part', 'chapter', 'anchor', 'reference', 'meta', 'placeholder'];
+const commandKeywords = ['title', 'part', 'chapter', 'anchor', 'reference', 'meta', 'placeholder', 'end'];
 
 // isBlockCommandAt reports whether the '&' at index i begins a *block* command
 // — one that is its own segment. title/part/chapter are always block; anchor
@@ -642,7 +642,7 @@ function isBlockCommandAt(chars, i) {
     if (kw === 'reference') {
         return false;
     }
-    if (kw === 'anchor' || kw === 'placeholder') {
+    if (kw === 'anchor' || kw === 'placeholder' || kw === 'end') {
         return commandIsSoleLineContent(chars, i);
     }
     return true; // title, part, chapter
@@ -700,15 +700,31 @@ function commandTokenEnd(chars, i) {
     while (k < chars.length && chars[k] !== '#' && chars[k] !== '{') {
         k++;
     }
+    const kw = chars.slice(i + 1, k).join('');
+    // 'end' is the one keyword whose token is complete with a bare #slug and
+    // no {...} groups (&end#slug). Its slug self-terminates on the slug
+    // charset [a-z0-9-] since no brace delimiter need follow.
+    let bareSlugToken = false;
     // optional #slug
     if (k < chars.length && chars[k] === '#') {
         k++;
-        while (k < chars.length && chars[k] !== '{' && chars[k] !== '\n') {
-            k++;
+        if (kw === 'end') {
+            const start = k;
+            while (k < chars.length && /[a-z0-9-]/.test(chars[k])) {
+                k++;
+            }
+            if (k === start) {
+                return -1; // '&end#' with no slug is not a token
+            }
+            bareSlugToken = true;
+        } else {
+            while (k < chars.length && chars[k] !== '{' && chars[k] !== '\n') {
+                k++;
+            }
         }
     }
     // one or more {...} groups, back to back
-    let sawGroup = false;
+    let sawGroup = bareSlugToken;
     while (k < chars.length && chars[k] === '{') {
         let depth = 0;
         while (k < chars.length) {
@@ -796,7 +812,7 @@ function splitAtBoundaries(chars, boundaries) {
 
 // segman version. Bumped by tools/bump-version.sh alongside go/segman.go,
 // rust/Cargo.toml, and the root VERSION.json so all four stay in lockstep.
-const VERSION = '2.2.0';
+const VERSION = '2.3.0';
 
 // Export for both Node (CommonJS) and the browser. In the browser we
 // expose a `window.segman` namespace AND keep `segment` as a top-level
