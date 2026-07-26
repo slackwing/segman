@@ -62,3 +62,6 @@
 {"id":"081","context":"The bundle also cited \u0026reference#origin{the opening. Of everything.} in a margin note.","expected":"The bundle also cited \u0026reference#origin{the opening. Of everything.} in a margin note."}
 {"id":"082","context":"The music was loud and nobody heard the door open.\n\n\u0026end#kegparty\n\nLater they found the notes.","expected":"\u0026end#kegparty"}
 {"id":"083","context":"Later they found the notes. The \u0026end of that story stayed unwritten.","expected":"The \u0026end of that story stayed unwritten."}
+{"id":"084","context":"\u0026chapter#p2c5{5.}{Variations}\n\n\u0026snippet#k7f2m9q1aa{The proposal}\n\nShe practiced the words twice","expected":"\u0026snippet#k7f2m9q1aa{The proposal}"}
+{"id":"085","context":"\u0026end#k7f2m9q1aa\n\nDeep in a sentence she hid \u0026snippet#q5w8e2r4t6{Hidden take} like contraband.\n\nThe margin note","expected":"Deep in a sentence she hid \u0026snippet#q5w8e2r4t6{Hidden take} like contraband."}
+{"id":"086","context":"like contraband.\n\nThe margin note read \u0026snippet#x3 and nothing else that year.","expected":"The margin note read \u0026snippet#x3 and nothing else that year."}

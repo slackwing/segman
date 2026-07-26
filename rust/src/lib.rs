@@ -606,7 +606,7 @@ fn mark_boundaries(chars: &[char], regions: &[NestedRegion]) -> Vec<BoundaryMark
 
 /// The recognized &-command names. A '&' begins a command only when
 /// immediately followed by one of these and then '#' or '{'.
-const COMMAND_KEYWORDS: [&str; 8] = ["title", "part", "chapter", "anchor", "reference", "meta", "placeholder", "end"];
+const COMMAND_KEYWORDS: [&str; 9] = ["title", "part", "chapter", "anchor", "reference", "meta", "placeholder", "snippet", "end"];
 
 /// Reports whether c is in the #slug charset [a-z0-9-].
 fn is_slug_char(c: char) -> bool {
@@ -622,7 +622,7 @@ fn is_block_command_at(chars: &[char], i: usize) -> bool {
     match command_keyword_at(chars, i) {
         None => false,
         Some("reference") => false,
-        Some("anchor") | Some("placeholder") | Some("end") => command_is_sole_line_content(chars, i),
+        Some("anchor") | Some("placeholder") | Some("snippet") | Some("end") => command_is_sole_line_content(chars, i),
         Some(_) => true, // title, part, chapter
     }
 }
