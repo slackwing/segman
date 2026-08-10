@@ -35,8 +35,8 @@
 |---------|-------------|----------------|----------|
 | `\n\n` | Double newline always creates boundary (paragraphs, sections) | 001 | HIGH |
 | `\n\t` | Tab-indented paragraph break always creates boundary | 012 | HIGH |
-| `&`-commands (block) | `&title`/`&part`/`&chapter`/`&meta` — and `&anchor`/`&placeholder`/`&snippet`/`&end` when it is the sole non-whitespace content of its line — are separate segments (boundary before and after), like headers | 065, 066, 067, 068, 069, 072, 076, 079, 082, 084 | HIGH |
-| `&`-commands (inline) | `&anchor`/`&placeholder`/`&snippet`/`&end` sharing its line with other content, and `&reference` always, stay inside the surrounding sentence (no boundary) | 070, 071, 073, 080, 085 | HIGH |
+| `&`-commands (block) | `&title`/`&part`/`&chapter`/`&meta` — and `&anchor`/`&placeholder`/`&snippet`/`&sketch`/`&end` when it is the sole non-whitespace content of its line — are separate segments (boundary before and after), like headers | 065, 066, 067, 068, 069, 072, 076, 079, 082, 084, 087 | HIGH |
+| `&`-commands (inline) | `&anchor`/`&placeholder`/`&snippet`/`&sketch`/`&end` sharing its line with other content, and `&reference` always, stay inside the surrounding sentence (no boundary) | 070, 071, 073, 080, 085, 088 | HIGH |
 | `&end#slug` bare token | `end` is the one keyword complete with a bare `#slug` and no `{...}` groups; the slug self-terminates on `[a-z0-9-]`. `&end` without `#`/`{` stays prose | 082, 083 | HIGH |
 | Literal `&` | A `&` not followed by an exact command keyword + `#`/`{` is ordinary prose (e.g. `Smith & Sons`, `R&D`, `A &chapter of accidents`) — never a boundary | 074, 075 | HIGH |
 | `&`-command token atomic (RULE 10) | No boundary may land strictly inside a recognized command token — sentence punctuation inside a `{...}` arg (a `&placeholder`'s details, a `&reference`'s notes) never splits the token | 079, 080, 081 | HIGH |
@@ -261,4 +261,5 @@
 | 2026-07-25 | v2.2.0: `&placeholder` + RULE 10 | Added `placeholder` to the command keywords (block iff sole line content, like anchor). New RULE 10: command tokens are atomic — boundaries strictly inside a recognized token are suppressed, so punctuation in `{...}` args no longer splits `&placeholder` details or `&reference` notes | 079, 080, 081 |
 | 2026-07-25 | v2.3.0: `&end#slug` | Added `end` to the command keywords (block iff sole line content, like anchor) — marks the end of a region opened by the slug's block command. Grammar: `end` alone may be a bare `#slug` token with no brace groups | 082, 083 |
 | 2026-07-26 | v2.4.0: `&snippet` | Added `snippet` to the command keywords (block iff sole line content, like anchor). Opens a machine-managed canon region `&snippet#<id>{label}` closed by `&end#<id>` (manuscript-studio VARIATIONS_PLAN). Standard grammar: recognition needs `#` or `{` after the keyword and ≥1 brace group — a bare `&snippet#id` stays prose | 084, 085, 086 |
+| 2026-08-10 | v2.5.0: `&sketch` | Added `sketch` to the command keywords — the successor spelling of `&snippet` after manuscript-studio's snippet→sketch rename; identical grammar and block/inline behavior (both spellings parse forever) | 087, 088, 089 |
 | 2026-03-27 | More abbreviations | Added comprehensive abbreviation list (time, titles, Latin, locations, months, days, business) | 059, 060, 061 |

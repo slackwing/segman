@@ -65,3 +65,6 @@
 {"id":"084","context":"\u0026chapter#p2c5{5.}{Variations}\n\n\u0026snippet#k7f2m9q1aa{The proposal}\n\nShe practiced the words twice","expected":"\u0026snippet#k7f2m9q1aa{The proposal}"}
 {"id":"085","context":"\u0026end#k7f2m9q1aa\n\nDeep in a sentence she hid \u0026snippet#q5w8e2r4t6{Hidden take} like contraband.\n\nThe margin note","expected":"Deep in a sentence she hid \u0026snippet#q5w8e2r4t6{Hidden take} like contraband."}
 {"id":"086","context":"like contraband.\n\nThe margin note read \u0026snippet#x3 and nothing else that year.","expected":"The margin note read \u0026snippet#x3 and nothing else that year."}
+{"id":"087","context":"\u0026chapter#p2c6{6.}{Placements}\n\n\u0026sketch#b8d4n2v6qq{The confession}\n\nHe said it plainly","expected":"\u0026sketch#b8d4n2v6qq{The confession}"}
+{"id":"088","context":"\u0026end#b8d4n2v6qq\n\nHalfway through she tucked \u0026sketch#z9y7x5w3vv{Second thoughts} between two commas.\n\nThe ledger listed","expected":"Halfway through she tucked \u0026sketch#z9y7x5w3vv{Second thoughts} between two commas."}
+{"id":"089","context":"two commas.\n\nThe ledger listed \u0026sketch#m4 and no more after that.","expected":"The ledger listed \u0026sketch#m4 and no more after that."}
