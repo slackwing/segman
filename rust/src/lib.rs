@@ -604,9 +604,11 @@ fn mark_boundaries(chars: &[char], regions: &[NestedRegion]) -> Vec<BoundaryMark
     boundaries
 }
 
-/// The recognized &-command names. A '&' begins a command only when
-/// immediately followed by one of these and then '#' or '{'.
-const COMMAND_KEYWORDS: [&str; 10] = ["title", "part", "chapter", "anchor", "reference", "meta", "placeholder", "snippet", "sketch", "end"];
+/// Command recognition is SYNTACTIC (v2.6.0): a '&' begins a command when
+/// immediately followed by a lowercase name [a-z]+ and then '#' or '{' — no
+/// keyword list, so new command names need no segman release. Keywords appear
+/// below ONLY where a command's segmentation class differs from the default
+/// (reference: never block; title/part/chapter: always block).
 
 /// Reports whether c is in the #slug charset [a-z0-9-].
 fn is_slug_char(c: char) -> bool {
@@ -619,32 +621,30 @@ fn is_slug_char(c: char) -> bool {
 /// of their physical line; reference is never block (always inline). A
 /// non-command '&' (literal ampersand in prose) returns false.
 fn is_block_command_at(chars: &[char], i: usize) -> bool {
-    match command_keyword_at(chars, i) {
+    match command_keyword_at(chars, i).as_deref() {
         None => false,
-        Some("reference") => false,
-        Some("anchor") | Some("placeholder") | Some("snippet") | Some("sketch") | Some("end") => command_is_sole_line_content(chars, i),
-        Some(_) => true, // title, part, chapter
+        Some("reference") => false, // always inline
+        Some("title") | Some("part") | Some("chapter") => true, // structural headers
+        // anchor family and ANY future command: block iff sole-line.
+        Some(_) => command_is_sole_line_content(chars, i),
     }
 }
 
-/// Returns the command keyword the '&' at index i introduces, or None if this
-/// is not a command. A command is '&' + exact keyword + ('#' or '{'); anything
-/// else (e.g. "Smith & Sons", "R&D") is literal.
-fn command_keyword_at(chars: &[char], i: usize) -> Option<&'static str> {
-    for kw in COMMAND_KEYWORDS.iter() {
-        let end = i + 1 + kw.len();
-        if end >= chars.len() {
-            continue;
-        }
-        let matches = chars[i + 1..end].iter().collect::<String>() == *kw;
-        if !matches {
-            continue;
-        }
-        if chars[end] == '#' || chars[end] == '{' {
-            return Some(*kw);
-        }
+/// Returns the command name the '&' at index i introduces, or None if this
+/// is not a command. A command is '&' + [a-z]+ + ('#' or '{'); anything else
+/// (e.g. "Smith & Sons", "R&D", "A &chapter of accidents") is literal prose.
+fn command_keyword_at(chars: &[char], i: usize) -> Option<String> {
+    let mut j = i + 1;
+    while j < chars.len() && chars[j].is_ascii_lowercase() {
+        j += 1;
     }
-    None
+    if j == i + 1 || j >= chars.len() {
+        return None;
+    }
+    if chars[j] != '#' && chars[j] != '{' {
+        return None;
+    }
+    Some(chars[i + 1..j].iter().collect())
 }
 
 /// Reports whether the command token starting at index i is the only

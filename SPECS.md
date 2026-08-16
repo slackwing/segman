@@ -35,10 +35,10 @@
 |---------|-------------|----------------|----------|
 | `\n\n` | Double newline always creates boundary (paragraphs, sections) | 001 | HIGH |
 | `\n\t` | Tab-indented paragraph break always creates boundary | 012 | HIGH |
-| `&`-commands (block) | `&title`/`&part`/`&chapter`/`&meta` — and `&anchor`/`&placeholder`/`&snippet`/`&sketch`/`&end` when it is the sole non-whitespace content of its line — are separate segments (boundary before and after), like headers | 065, 066, 067, 068, 069, 072, 076, 079, 082, 084, 087 | HIGH |
-| `&`-commands (inline) | `&anchor`/`&placeholder`/`&snippet`/`&sketch`/`&end` sharing its line with other content, and `&reference` always, stay inside the surrounding sentence (no boundary) | 070, 071, 073, 080, 085, 088 | HIGH |
+| `&`-commands (block) | `&title`/`&part`/`&chapter` always — and ANY other command (`&anchor`/`&placeholder`/`&snippet`/`&sketch`/`&end`/future names) when it is the sole non-whitespace content of its line — are separate segments (boundary before and after), like headers | 065, 066, 067, 068, 069, 072, 076, 079, 082, 084, 087, 092 | HIGH |
+| `&`-commands (inline) | any non-header command sharing its line with other content, and `&reference` always, stay inside the surrounding sentence (no boundary) | 070, 071, 073, 080, 085, 088, 094 | HIGH |
 | `&end#slug` bare token | `end` is the one keyword complete with a bare `#slug` and no `{...}` groups; the slug self-terminates on `[a-z0-9-]`. `&end` without `#`/`{` stays prose | 082, 083 | HIGH |
-| Literal `&` | A `&` not followed by an exact command keyword + `#`/`{` is ordinary prose (e.g. `Smith & Sons`, `R&D`, `A &chapter of accidents`) — never a boundary | 074, 075 | HIGH |
+| Literal `&` | A `&` not followed by a lowercase name `[a-z]+` + `#`/`{` is ordinary prose (e.g. `Smith & Sons`, `R&D`, `A &chapter of accidents`, `A &fresco of accidents`) — never a boundary | 074, 075, 095, 096 | HIGH |
 | `&`-command token atomic (RULE 10) | No boundary may land strictly inside a recognized command token — sentence punctuation inside a `{...}` arg (a `&placeholder`'s details, a `&reference`'s notes) never splits the token | 079, 080, 081 | HIGH |
 
 ### 2. Dialogue & Quotation Rules
@@ -121,7 +121,7 @@
 - **Editorial brackets:** `[...]` inside quotes/parens/italics do NOT create boundaries (protected by nested region detection)
 - **Paragraph breaks:** Both `\n\n` and `\n\t` (when not dialogue) create boundaries
 - **Markdown headers:** REMOVED in v2.0.0 — a `#` line is now ordinary prose. Structure is expressed with `&`-commands.
-- **`&`-commands:** A `&` begins a command only when immediately followed by an exact keyword (`title`, `part`, `chapter`, `anchor`, `reference`) and then `#` or `{`. `title`/`part`/`chapter` always boundary before and after (own segment); `anchor` boundaries only when it is the sole non-whitespace content of its line (leading indent / trailing spaces ignored), otherwise it stays inline; `reference` never boundaries. Any other `&` is literal prose. segman decides boundaries only — the command's fields are parsed by the consuming application.
+- **`&`-commands (v2.6.0 — SYNTACTIC):** A `&` begins a command when immediately followed by a lowercase name `[a-z]+` and then `#` or `{` — there is NO keyword list for recognition, so new command names segment correctly without a segman release. Keywords matter only for the segmentation CLASS: `title`/`part`/`chapter` always boundary before and after (own segment); `reference` never boundaries; every other name (known or future) boundaries only when it is the sole non-whitespace content of its line (leading indent / trailing spaces ignored), otherwise it stays inline. Any other `&` is literal prose. segman decides boundaries only — the command's fields are parsed by the consuming application.
 
 ### Quote Classification
 - **Standalone dialogue**: Quote on own line (`\n\t"..."`) without attribution before
@@ -256,6 +256,7 @@
 | 2026-03-24 | Period after attribution | Clarified period AFTER attribution ends sentence | 023, 024 |
 | 2026-03-25 | V3 complete (100%) | 3-phase architecture with whitespace normalization | All 36 |
 | 2026-03-27 | Editorial brackets protected | Fixed RULE 1: Brackets inside quotes/parens/italics don't create boundaries | 062, 063, 064 |
+| 2026-08-16 | **v2.6.0**: command recognition is syntactic (`&[a-z]+` + `#`/`{`), no keyword list | unknown command names segment like the anchor family (block iff sole-line); keywords retained only for class overrides (reference/title/part/chapter) | 092-096 |
 | 2026-07-24 | **v2.0.0 BREAKING**: removed RULE 8 (`#` headers) | `#` lines are now literal prose; structure via `&`-commands | 057, 077 |
 | 2026-07-24 | RULE 9: `&`-commands | Added structural `&`-command boundaries (block/inline) alongside `#` headers; additive, `#` unchanged. Derived from reference/the-wildfire-v2.manuscript | 065-076 |
 | 2026-07-25 | v2.2.0: `&placeholder` + RULE 10 | Added `placeholder` to the command keywords (block iff sole line content, like anchor). New RULE 10: command tokens are atomic — boundaries strictly inside a recognized token are suppressed, so punctuation in `{...}` args no longer splits `&placeholder` details or `&reference` notes | 079, 080, 081 |

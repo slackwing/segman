@@ -625,9 +625,11 @@ function markBoundaries(chars, regions) {
     return boundaries;
 }
 
-// commandKeywords are the recognized &-command names. A '&' begins a command
-// only when immediately followed by one of these and then '#' or '{'.
-const commandKeywords = ['title', 'part', 'chapter', 'anchor', 'reference', 'meta', 'placeholder', 'snippet', 'sketch', 'end'];
+// Command recognition is SYNTACTIC (v2.6.0): a '&' begins a command when
+// immediately followed by a lowercase name [a-z]+ and then '#' or '{' — no
+// keyword list, so new command names need no segman release. Keywords appear
+// below ONLY where a command's segmentation class differs from the default
+// (reference: never block; title/part/chapter: always block).
 
 // isBlockCommandAt reports whether the '&' at index i begins a *block* command
 // — one that is its own segment. title/part/chapter are always block; anchor
@@ -639,32 +641,32 @@ function isBlockCommandAt(chars, i) {
     if (kw === '') {
         return false;
     }
-    if (kw === 'reference') {
+    if (kw === 'reference') { // always inline
         return false;
     }
-    if (kw === 'anchor' || kw === 'placeholder' || kw === 'snippet' || kw === 'sketch' || kw === 'end') {
-        return commandIsSoleLineContent(chars, i);
+    if (kw === 'title' || kw === 'part' || kw === 'chapter') { // structural headers: always block
+        return true;
     }
-    return true; // title, part, chapter
+    // anchor family and ANY future command: block iff sole-line.
+    return commandIsSoleLineContent(chars, i);
 }
 
-// commandKeywordAt returns the command keyword the '&' at index i introduces,
-// or '' if this is not a command. A command is '&' + exact keyword + ('#' or
-// '{'); anything else (e.g. "Smith & Sons", "R&D") is literal.
+// commandKeywordAt returns the command name the '&' at index i introduces,
+// or '' if this is not a command. A command is '&' + [a-z]+ + ('#' or '{');
+// anything else (e.g. "Smith & Sons", "R&D", "A &chapter of accidents") is
+// literal prose.
 function commandKeywordAt(chars, i) {
-    for (const kw of commandKeywords) {
-        const end = i + 1 + kw.length;
-        if (end >= chars.length) {
-            continue;
-        }
-        if (chars.slice(i + 1, end).join('') !== kw) {
-            continue;
-        }
-        if (chars[end] === '#' || chars[end] === '{') {
-            return kw;
-        }
+    let j = i + 1;
+    while (j < chars.length && chars[j] >= 'a' && chars[j] <= 'z') {
+        j++;
     }
-    return '';
+    if (j === i + 1 || j >= chars.length) {
+        return '';
+    }
+    if (chars[j] !== '#' && chars[j] !== '{') {
+        return '';
+    }
+    return chars.slice(i + 1, j).join('');
 }
 
 // commandIsSoleLineContent reports whether the command token starting at index
@@ -812,7 +814,7 @@ function splitAtBoundaries(chars, boundaries) {
 
 // segman version. Bumped by tools/bump-version.sh alongside go/segman.go,
 // rust/Cargo.toml, and the root VERSION.json so all four stay in lockstep.
-const VERSION = '2.5.0';
+const VERSION = '2.6.0';
 
 // Export for both Node (CommonJS) and the browser. In the browser we
 // expose a `window.segman` namespace AND keep `segment` as a top-level
