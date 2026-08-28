@@ -199,10 +199,12 @@ function markBoundaries(chars, regions) {
             return true;
         }
 
-        // Check for a.m. and p.m. patterns (already has a period before)
-        if (lower === 'm') {
-            return true; // handles "a.m." and "p.m."
-        }
+        // NOTE: 'm' (a.m./p.m.) is deliberately NOT a hard abbreviation. A
+        // following lowercase word already continues the sentence via RULE
+        // 5's lowercase heuristic ("left at 10 a.m. and drove east"); a
+        // following CAPITAL is a real boundary ("almost 10 A. M. And the
+        // stale heat…" — the capital is the giveaway). Hard-abbreviating
+        // 'm' ate that boundary (v2.6.1).
 
         // Check for common Latin abbreviations
         if (lower === 'e' || lower === 'i') {
@@ -814,7 +816,7 @@ function splitAtBoundaries(chars, boundaries) {
 
 // segman version. Bumped by tools/bump-version.sh alongside go/segman.go,
 // rust/Cargo.toml, and the root VERSION.json so all four stay in lockstep.
-const VERSION = '2.6.0';
+const VERSION = '2.6.1';
 
 // Export for both Node (CommonJS) and the browser. In the browser we
 // expose a `window.segman` namespace AND keep `segment` as a top-level

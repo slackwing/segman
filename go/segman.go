@@ -10,7 +10,7 @@ import (
 // all four stay in lockstep. The same string is what consumers should
 // stamp onto their own data when they need to record "which segmenter
 // produced this".
-const Version = "2.6.0"
+const Version = "2.6.1"
 
 // nestedRegion represents a nested structure (quotes, parens, brackets, italics)
 type nestedRegion struct {
@@ -49,10 +49,12 @@ func isCommonAbbreviation(word string) bool {
 	// Note: Single letters (initials) are NOT automatically abbreviations here.
 	// They're handled by the "followed by lowercase" heuristic in RULE 5.
 
-	// Check for a.m. and p.m. patterns (already has a period before)
-	if lower == "m" {
-		return true // handles "a.m." and "p.m."
-	}
+	// NOTE: "m" (a.m./p.m.) is deliberately NOT a hard abbreviation. A
+	// following lowercase word already continues the sentence via RULE 5's
+	// lowercase heuristic ("left at 10 a.m. and drove east"); a following
+	// CAPITAL is a real boundary ("almost 10 A. M. And the stale heat…" —
+	// the capital is the giveaway). Hard-abbreviating "m" ate that
+	// boundary (v2.6.1).
 
 	// Check for common Latin abbreviations
 	if lower == "e" || lower == "i" {

@@ -73,3 +73,8 @@
 {"id":"094","context":"what the wall would become.\n\nHe left a note that said \u0026glaze{half-dry, do not touch} beside the scaffold. We read it twice and touched nothing.\n\nThe receipt was itemized","expected":"He left a note that said \u0026glaze{half-dry, do not touch} beside the scaffold."}
 {"id":"095","context":"touched nothing.\n\nThe receipt was itemized as paint \u0026 plaster and nothing more. A \u0026fresco of accidents, the foreman joked, and we let it stand.\n\nThen the wall said","expected":"The receipt was itemized as paint \u0026 plaster and nothing more."}
 {"id":"096","context":"touched nothing.\n\nThe receipt was itemized as paint \u0026 plaster and nothing more. A \u0026fresco of accidents, the foreman joked, and we let it stand.\n\nThen the wall said","expected":"A \u0026fresco of accidents, the foreman joked, and we let it stand."}
+{"id":"097","context":"But it was almost 10 A. M. And the stale heat had already settled in.","expected":"But it was almost 10 A. M."}
+{"id":"098","context":"But it was almost 10 A. M. And the stale heat had already settled in.","expected":"And the stale heat had already settled in."}
+{"id":"099","context":"We had left at 10 a.m. and driven east until the road gave out.","expected":"We had left at 10 a.m. and driven east until the road gave out."}
+{"id":"100","context":"The bus was due at 9 p.m. Nobody came to meet it.","expected":"The bus was due at 9 p.m."}
+{"id":"101","context":"The timers were set for 6 a.m. sharp.","expected":"The timers were set for 6 a.m. sharp."}

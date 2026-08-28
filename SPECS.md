@@ -89,6 +89,10 @@
 
 **Time expressions:**
 - a.m., p.m., am, pm (no periods)
+- SOFT only (v2.6.1): a following lowercase word continues the sentence
+  ("left at 10 a.m. and drove east"); a following CAPITAL is a real
+  boundary ("almost 10 A. M. And the stale heat…" — the capital is the
+  giveaway). Scenarios 097–101.
 
 **Common abbreviations:**
 - etc., vs., e.g., i.e., approx., govt.

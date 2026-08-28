@@ -41,10 +41,12 @@ fn is_common_abbreviation(word: &str) -> bool {
     // Note: Single letters (initials) are NOT automatically abbreviations here.
     // They're handled by the "followed by lowercase" heuristic in RULE 5.
 
-    // Check for a.m. and p.m. patterns (already has a period before)
-    if lower == "m" {
-        return true; // handles "a.m." and "p.m."
-    }
+    // NOTE: "m" (a.m./p.m.) is deliberately NOT a hard abbreviation. A
+    // following lowercase word already continues the sentence via RULE 5's
+    // lowercase heuristic ("left at 10 a.m. and drove east"); a following
+    // CAPITAL is a real boundary ("almost 10 A. M. And the stale heat…" —
+    // the capital is the giveaway). Hard-abbreviating "m" ate that
+    // boundary (v2.6.1).
 
     // Check for common Latin abbreviations
     if lower == "e" || lower == "i" {
