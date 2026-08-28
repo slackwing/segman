@@ -10,7 +10,7 @@ import (
 // all four stay in lockstep. The same string is what consumers should
 // stamp onto their own data when they need to record "which segmenter
 // produced this".
-const Version = "2.6.1"
+const Version = "2.7.0"
 
 // nestedRegion represents a nested structure (quotes, parens, brackets, italics)
 type nestedRegion struct {
@@ -596,13 +596,21 @@ func markBoundaries(runes []rune, regions []nestedRegion) []boundaryMark {
 		if i > 0 {
 			boundaries = append(boundaries, boundaryMark{pos: i, reason: "before &command"})
 		}
-		// Boundary after the command line (at its terminating newline).
-		j := i
-		for j < len(runes) && runes[j] != '\n' {
-			j++
-		}
-		if j < len(runes) {
-			boundaries = append(boundaries, boundaryMark{pos: j, reason: "after &command"})
+		kw := commandKeywordAt(runes, i)
+		alwaysBlock := kw == "title" || kw == "part" || kw == "chapter"
+		if alwaysBlock || commandIsSoleLineContent(runes, i) {
+			// Boundary after the command line (at its terminating newline).
+			j := i
+			for j < len(runes) && runes[j] != '\n' {
+				j++
+			}
+			if j < len(runes) {
+				boundaries = append(boundaries, boundaryMark{pos: j, reason: "after &command"})
+			}
+		} else if end := commandTokenEnd(runes, i); end > 0 && end < len(runes) {
+			// Sentence-adjacent mid-line command (RULE 11): the segment ends
+			// right after the token, so the following prose starts fresh.
+			boundaries = append(boundaries, boundaryMark{pos: end, reason: "after &command"})
 		}
 	}
 
@@ -669,8 +677,35 @@ func isBlockCommandAt(runes []rune, i int) bool {
 	case "title", "part", "chapter": // structural headers: always block
 		return true
 	default: // anchor family and ANY future command: block iff sole-line
-		return commandIsSoleLineContent(runes, i)
+		// … or sentence-adjacent (RULE 11, v2.7.0).
+		return commandIsSoleLineContent(runes, i) || commandFollowsSentenceEnd(runes, i)
 	}
+}
+
+// commandFollowsSentenceEnd (RULE 11, v2.7.0): an anchor-family command whose
+// nearest preceding non-whitespace character closes a sentence (.!?… —
+// looking through closing quotes/brackets/italic stars) is its own segment
+// even though it shares a line with other content. A command dropped BETWEEN
+// sentences ("…cozy accents. &sketch#x{} But, imagining…") belongs to neither
+// neighbor — and folding it inline actually GLUED the neighbors together,
+// because the '&' after the period is not a capital, so the period boundary
+// never fired. A command mid-sentence still stays inline.
+func commandFollowsSentenceEnd(runes []rune, i int) bool {
+	k := i - 1
+	for k >= 0 && (runes[k] == ' ' || runes[k] == '\t' || runes[k] == '\r' || runes[k] == '\n') {
+		k--
+	}
+	if k < 0 {
+		return false // start of text — the sole-line rule owns that case
+	}
+	for k >= 0 && (runes[k] == '"' || runes[k] == '\u201D' || runes[k] == '\'' ||
+		runes[k] == '\u2019' || runes[k] == '*' || runes[k] == ')' || runes[k] == ']') {
+		k--
+	}
+	if k < 0 {
+		return false
+	}
+	return runes[k] == '.' || runes[k] == '!' || runes[k] == '?' || runes[k] == '\u2026'
 }
 
 // commandKeywordAt returns the command name the '&' at index i introduces,

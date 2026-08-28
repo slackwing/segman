@@ -571,13 +571,23 @@ fn mark_boundaries(chars: &[char], regions: &[NestedRegion]) -> Vec<BoundaryMark
         if i > 0 {
             boundaries.push(BoundaryMark { pos: i, reason: "before &command" });
         }
-        // Boundary after the command line (at its terminating newline).
-        let mut j = i;
-        while j < chars.len() && chars[j] != '\n' {
-            j += 1;
-        }
-        if j < chars.len() {
-            boundaries.push(BoundaryMark { pos: j, reason: "after &command" });
+        let kw = command_keyword_at(&chars, i);
+        let always_block = matches!(kw.as_deref(), Some("title") | Some("part") | Some("chapter"));
+        if always_block || command_is_sole_line_content(&chars, i) {
+            // Boundary after the command line (at its terminating newline).
+            let mut j = i;
+            while j < chars.len() && chars[j] != '\n' {
+                j += 1;
+            }
+            if j < chars.len() {
+                boundaries.push(BoundaryMark { pos: j, reason: "after &command" });
+            }
+        } else if let Some(end) = command_token_end(&chars, i) {
+            // Sentence-adjacent mid-line command (RULE 11): the segment ends
+            // right after the token, so the following prose starts fresh.
+            if end < chars.len() {
+                boundaries.push(BoundaryMark { pos: end, reason: "after &command" });
+            }
         }
     }
 
@@ -627,9 +637,35 @@ fn is_block_command_at(chars: &[char], i: usize) -> bool {
         None => false,
         Some("reference") => false, // always inline
         Some("title") | Some("part") | Some("chapter") => true, // structural headers
-        // anchor family and ANY future command: block iff sole-line.
-        Some(_) => command_is_sole_line_content(chars, i),
+        // anchor family and ANY future command: block iff sole-line…
+        // …or sentence-adjacent (RULE 11, v2.7.0).
+        Some(_) => command_is_sole_line_content(chars, i) || command_follows_sentence_end(chars, i),
     }
+}
+
+/// RULE 11 (v2.7.0): an anchor-family command whose nearest preceding
+/// non-whitespace character closes a sentence (.!?… — looking through
+/// closing quotes/brackets/italic stars) is its own segment even though it
+/// shares a line with other content. A command dropped BETWEEN sentences
+/// ("…cozy accents. &sketch#x{} But, imagining…") belongs to neither
+/// neighbor — and folding it inline actually GLUED the neighbors together,
+/// because the '&' after the period is not a capital, so the period
+/// boundary never fired. A command mid-sentence still stays inline.
+fn command_follows_sentence_end(chars: &[char], i: usize) -> bool {
+    let mut k = i as isize - 1;
+    while k >= 0 && matches!(chars[k as usize], ' ' | '\t' | '\r' | '\n') {
+        k -= 1;
+    }
+    if k < 0 {
+        return false; // start of text — the sole-line rule owns that case
+    }
+    while k >= 0 && matches!(chars[k as usize], '"' | '\u{201D}' | '\'' | '\u{2019}' | '*' | ')' | ']') {
+        k -= 1;
+    }
+    if k < 0 {
+        return false;
+    }
+    matches!(chars[k as usize], '.' | '!' | '?' | '\u{2026}')
 }
 
 /// Returns the command name the '&' at index i introduces, or None if this

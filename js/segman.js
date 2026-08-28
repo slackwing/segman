@@ -592,13 +592,24 @@ function markBoundaries(chars, regions) {
         if (i > 0) {
             boundaries.push({ pos: i, reason: 'before &command' });
         }
-        // Boundary after the command line (at its terminating newline).
-        let j = i;
-        while (j < chars.length && chars[j] !== '\n') {
-            j++;
-        }
-        if (j < chars.length) {
-            boundaries.push({ pos: j, reason: 'after &command' });
+        const kw = commandKeywordAt(chars, i);
+        const alwaysBlock = kw === 'title' || kw === 'part' || kw === 'chapter';
+        if (alwaysBlock || commandIsSoleLineContent(chars, i)) {
+            // Boundary after the command line (at its terminating newline).
+            let j = i;
+            while (j < chars.length && chars[j] !== '\n') {
+                j++;
+            }
+            if (j < chars.length) {
+                boundaries.push({ pos: j, reason: 'after &command' });
+            }
+        } else {
+            // Sentence-adjacent mid-line command (RULE 11): the segment ends
+            // right after the token, so the following prose starts fresh.
+            const end = commandTokenEnd(chars, i);
+            if (end > 0 && end < chars.length) {
+                boundaries.push({ pos: end, reason: 'after &command' });
+            }
         }
     }
 
@@ -649,8 +660,35 @@ function isBlockCommandAt(chars, i) {
     if (kw === 'title' || kw === 'part' || kw === 'chapter') { // structural headers: always block
         return true;
     }
-    // anchor family and ANY future command: block iff sole-line.
-    return commandIsSoleLineContent(chars, i);
+    // anchor family and ANY future command: block iff sole-line…
+    // …or sentence-adjacent (RULE 11, v2.7.0).
+    return commandIsSoleLineContent(chars, i) || commandFollowsSentenceEnd(chars, i);
+}
+
+// commandFollowsSentenceEnd (RULE 11, v2.7.0): an anchor-family command whose
+// nearest preceding non-whitespace character closes a sentence (.!?… —
+// looking through closing quotes/brackets/italic stars) is its own segment
+// even though it shares a line with other content. A command dropped BETWEEN
+// sentences ("…cozy accents. &sketch#x{} But, imagining…") belongs to neither
+// neighbor — and folding it inline actually GLUED the neighbors together,
+// because the '&' after the period is not a capital, so the period boundary
+// never fired. A command mid-sentence still stays inline.
+function commandFollowsSentenceEnd(chars, i) {
+    let k = i - 1;
+    while (k >= 0 && (chars[k] === ' ' || chars[k] === '\t' || chars[k] === '\r' || chars[k] === '\n')) {
+        k--;
+    }
+    if (k < 0) {
+        return false; // start of text — the sole-line rule owns that case
+    }
+    while (k >= 0 && (chars[k] === '"' || chars[k] === '\u201D' || chars[k] === "'" ||
+        chars[k] === '\u2019' || chars[k] === '*' || chars[k] === ')' || chars[k] === ']')) {
+        k--;
+    }
+    if (k < 0) {
+        return false;
+    }
+    return chars[k] === '.' || chars[k] === '!' || chars[k] === '?' || chars[k] === '\u2026';
 }
 
 // commandKeywordAt returns the command name the '&' at index i introduces,
@@ -816,7 +854,7 @@ function splitAtBoundaries(chars, boundaries) {
 
 // segman version. Bumped by tools/bump-version.sh alongside go/segman.go,
 // rust/Cargo.toml, and the root VERSION.json so all four stay in lockstep.
-const VERSION = '2.6.1';
+const VERSION = '2.7.0';
 
 // Export for both Node (CommonJS) and the browser. In the browser we
 // expose a `window.segman` namespace AND keep `segment` as a top-level
