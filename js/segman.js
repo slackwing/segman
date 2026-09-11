@@ -584,6 +584,31 @@ function markBoundaries(chars, regions) {
         if (chars[i] !== '&') {
             continue;
         }
+        if (commandKeywordAt(chars, i) === 'footnote') {
+            // RULE 12 (v2.8.0): a footnote belongs to the sentence it
+            // annotates. Mid-sentence it is inline like any command (atomic
+            // by RULE 10). Right after a sentence's terminator — with or
+            // without a whitespace gap — it must neither stand alone (RULE
+            // 11) nor open the next sentence: drop any boundary in the gap
+            // between the terminator and the token, and end the host
+            // sentence right after the token instead.
+            if (commandFollowsSentenceEnd(chars, i)) {
+                let ws = i;
+                while (ws > 0 && (chars[ws - 1] === ' ' || chars[ws - 1] === '\t' || chars[ws - 1] === '\r' || chars[ws - 1] === '\n')) {
+                    ws--;
+                }
+                for (let k = boundaries.length - 1; k >= 0; k--) {
+                    if (boundaries[k].pos >= ws && boundaries[k].pos <= i) {
+                        boundaries.splice(k, 1);
+                    }
+                }
+                const end = commandTokenEnd(chars, i);
+                if (end > 0 && end < chars.length) {
+                    boundaries.push({ pos: end, reason: 'after &footnote' });
+                }
+            }
+            continue;
+        }
         if (!isBlockCommandAt(chars, i)) {
             continue;
         }
@@ -654,7 +679,7 @@ function isBlockCommandAt(chars, i) {
     if (kw === '') {
         return false;
     }
-    if (kw === 'reference') { // always inline
+    if (kw === 'reference' || kw === 'footnote') { // always inline (footnote: RULE 12 attaches it)
         return false;
     }
     if (kw === 'title' || kw === 'part' || kw === 'chapter') { // structural headers: always block
@@ -854,7 +879,7 @@ function splitAtBoundaries(chars, boundaries) {
 
 // segman version. Bumped by tools/bump-version.sh alongside go/segman.go,
 // rust/Cargo.toml, and the root VERSION.json so all four stay in lockstep.
-const VERSION = '2.7.0';
+const VERSION = '2.8.0';
 
 // Export for both Node (CommonJS) and the browser. In the browser we
 // expose a `window.segman` namespace AND keep `segment` as a top-level

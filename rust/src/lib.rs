@@ -563,6 +563,28 @@ fn mark_boundaries(chars: &[char], regions: &[NestedRegion]) -> Vec<BoundaryMark
         if chars[i] != '&' {
             continue;
         }
+        if command_keyword_at(&chars, i).as_deref() == Some("footnote") {
+            // RULE 12 (v2.8.0): a footnote belongs to the sentence it
+            // annotates. Mid-sentence it is inline like any command (atomic
+            // by RULE 10). Right after a sentence's terminator — with or
+            // without a whitespace gap — it must neither stand alone (RULE
+            // 11) nor open the next sentence: drop any boundary in the gap
+            // between the terminator and the token, and end the host
+            // sentence right after the token instead.
+            if command_follows_sentence_end(&chars, i) {
+                let mut ws = i;
+                while ws > 0 && matches!(chars[ws - 1], ' ' | '\t' | '\r' | '\n') {
+                    ws -= 1;
+                }
+                boundaries.retain(|b| b.pos < ws || b.pos > i);
+                if let Some(end) = command_token_end(&chars, i) {
+                    if end < chars.len() {
+                        boundaries.push(BoundaryMark { pos: end, reason: "after &footnote" });
+                    }
+                }
+            }
+            continue;
+        }
         if !is_block_command_at(&chars, i) {
             continue;
         }
@@ -635,7 +657,7 @@ fn is_slug_char(c: char) -> bool {
 fn is_block_command_at(chars: &[char], i: usize) -> bool {
     match command_keyword_at(chars, i).as_deref() {
         None => false,
-        Some("reference") => false, // always inline
+        Some("reference") | Some("footnote") => false, // always inline (footnote: RULE 12 attaches it)
         Some("title") | Some("part") | Some("chapter") => true, // structural headers
         // anchor family and ANY future command: block iff sole-line…
         // …or sentence-adjacent (RULE 11, v2.7.0).
