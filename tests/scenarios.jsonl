@@ -82,3 +82,7 @@
 {"id":"103","context":"She walked the burned line at dusk. \u0026anchor#origin{where it all begins} The ground was still warm under her boots.","expected":"The ground was still warm under her boots."}
 {"id":"104","context":"She bought the ticket without admitting why. \u0026placeholder#reunion{sentences}{l}{Reunion beat}{They finally meet. Keep it wordless.} The stationmaster remembered him.","expected":"\u0026placeholder#reunion{sentences}{l}{Reunion beat}{They finally meet. Keep it wordless.}"}
 {"id":"105","context":"She bought the ticket without admitting why. \u0026placeholder#reunion{sentences}{l}{Reunion beat}{They finally meet. Keep it wordless.} The stationmaster remembered him.","expected":"The stationmaster remembered him."}
+{"id": "106", "context": "He left the valley.\u0026footnote{A note. With two sentences.} She stayed behind.", "expected": "He left the valley.\u0026footnote{A note. With two sentences.}"}
+{"id": "107", "context": "Gap here. \u0026footnote{Spaced note.} Then more.", "expected": "Gap here. \u0026footnote{Spaced note.}"}
+{"id": "108", "context": "\"Quoted.\"\u0026footnote{After a quote.} Last one.", "expected": "\"Quoted.\"\u0026footnote{After a quote.}"}
+{"id": "109", "context": "Mid,\u0026footnote{inline} way through. Next.", "expected": "Mid,\u0026footnote{inline} way through."}
