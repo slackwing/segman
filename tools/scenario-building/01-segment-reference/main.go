@@ -92,7 +92,7 @@ func main() {
 
 // callJSSegmenter calls the JavaScript segmenter
 func callJSSegmenter(text string) ([]string, error) {
-	cmd := exec.Command("node", "exports/cli/segman-node-cli")
+	cmd := exec.Command("node", "js/segman-cli.js")
 	cmd.Stdin = strings.NewReader(text)
 	output, err := cmd.Output()
 	if err != nil {
@@ -109,7 +109,7 @@ func callJSSegmenter(text string) ([]string, error) {
 
 // callRustSegmenter calls the Rust segmenter
 func callRustSegmenter(text string) ([]string, error) {
-	cmd := exec.Command("exports/cli/segman-rust-cli")
+	cmd := exec.Command("dist/segman-rust-cli")
 	cmd.Stdin = strings.NewReader(text)
 	output, err := cmd.Output()
 	if err != nil {

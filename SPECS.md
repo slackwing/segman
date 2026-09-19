@@ -37,9 +37,9 @@
 | `\n\t` | Tab-indented paragraph break always creates boundary | 012 | HIGH |
 | `&`-commands (block) | `&title`/`&part`/`&chapter` always — and ANY other command (`&anchor`/`&placeholder`/`&snippet`/`&sketch`/`&end`/future names) when it is the sole non-whitespace content of its line — are separate segments (boundary before and after), like headers | 065, 066, 067, 068, 069, 072, 076, 079, 082, 084, 087, 092 | HIGH |
 | `&`-commands (inline) | any non-header command sharing its line with other content MID-SENTENCE, and `&reference` always, stay inside the surrounding sentence (no boundary) | 070, 071, 073, 080, 085, 088, 094 | HIGH |
-| `&`-commands (sentence-adjacent, RULE 11) | an anchor-family command whose nearest preceding non-whitespace char closes a sentence (`.!?…`, looking through closing quotes/brackets/stars) is its OWN segment even mid-line — it belongs to neither neighbor, and folding it inline glued the neighbors together (the `&` is not a capital, so the period boundary never fired). Segment ends right after the token. `&reference` exempt (always inline) | 070, 080, 102–105 | HIGH |
-| `&footnote` (RULE 12) | a footnote is inline ALWAYS and attaches to the sentence it follows: right after a terminator (looking through closing quotes/brackets/stars; a whitespace gap allowed) any boundary in the gap is dropped and the host sentence ends right after the token — RULE 11 never applies to footnotes; mid-sentence it is atomic (RULE 10) | 106–109 | HIGH |
-| `&end#slug` bare token | `end` is the one keyword complete with a bare `#slug` and no `{...}` groups; the slug self-terminates on `[a-z0-9-]`. `&end` without `#`/`{` stays prose | 082, 083 | HIGH |
+| `&`-commands (sentence-adjacent, RULE 11) | an anchor-family command whose nearest preceding non-whitespace char closes a sentence (`.!?…`, looking through closing quotes/brackets/stars) is its OWN segment even mid-line — it belongs to neither neighbor, and folding it inline glued the neighbors together (the `&` is not a capital, so the period boundary never fired). Segment ends right after the token. `&reference` exempt (always inline); annotations on their line exempt (RULE 12) | 070, 080, 102–105 | HIGH |
+| `&footnote` / `&marker` / `&mark` attach (RULE 12) | an ANNOTATION belongs to the sentence it follows. Right after a terminator ON ITS LINE (looking through closing quotes/brackets/stars; a space/tab gap allowed) any boundary in the gap is dropped and the host sentence ends right after the token — RULE 11 never applies there. Across a line break it does NOT attach (a paragraph-leading annotation must not swallow the `\n\t`): a footnote stays inline, a marker is sole-line block or leads its sentence. Mid-sentence every annotation is atomic inline (RULE 10). `&footnote` is inline ALWAYS; `&marker`/`&mark` since v2.9.0 | 106–111, 113–119 | HIGH |
+| bare `#slug` token | a keyword with one or more `#slug`s and no `{...}` groups is a complete token for EVERY keyword (v2.9.0; before, `end` alone). Each slug self-terminates on `[a-z0-9-]`, so a bare `&marker#hard` ends at its slug — it used to run on to the next `{` on its line, and RULE 10 then erased every sentence boundary in between. `&end` / `&marker` without `#`/`{` stay prose | 082, 083, 112, 116, 117 | HIGH |
 | Literal `&` | A `&` not followed by a lowercase name `[a-z]+` + `#`/`{` is ordinary prose (e.g. `Smith & Sons`, `R&D`, `A &chapter of accidents`, `A &fresco of accidents`) — never a boundary | 074, 075, 095, 096 | HIGH |
 | `&`-command token atomic (RULE 10) | No boundary may land strictly inside a recognized command token — sentence punctuation inside a `{...}` arg (a `&placeholder`'s details, a `&reference`'s notes) never splits the token | 079, 080, 081 | HIGH |
 
@@ -229,6 +229,8 @@
 | Literal `#` (no longer a header, v2.0.0) | 077 |
 | `&`-commands (block) | 065, 066, 067, 068, 069, 072 |
 | `&`-commands (inline) | 070, 071, 073 |
+| Annotations attach — `&footnote`/`&marker`/`&mark` (RULE 12) | 106–111, 113–119 |
+| Bare `#slug` tokens | 082, 083, 112, 116, 117 |
 | Literal `&` (not a command) | 074, 075 |
 | Double newline `\n\n` | 001 |
 | Newline + tab `\n\t` | 004, 005 |
@@ -262,6 +264,7 @@
 | 2026-03-24 | Period after attribution | Clarified period AFTER attribution ends sentence | 023, 024 |
 | 2026-03-25 | V3 complete (100%) | 3-phase architecture with whitespace normalization | All 36 |
 | 2026-03-27 | Editorial brackets protected | Fixed RULE 1: Brackets inside quotes/parens/italics don't create boundaries | 062, 063, 064 |
+| 2026-09-19 | **v2.9.0**: bare `#slug` tokens for every keyword; RULE 12 covers `&marker`/`&mark`, on the token's line only | a bare `&marker#hard` ran on to the next `{` on its line and RULE 10 erased every sentence boundary between them (a thousand-character "sentence" in the reference author's draft); markers were standalone (RULE 11) or led the next sentence — now, like footnotes, they attach to the sentence they follow; attaching across a line break swallowed a paragraph break | 110–119 |
 | 2026-09-11 | **v2.8.0**: RULE 12 — footnotes attach to the sentence they follow | `&footnote{…}` right after sentence-terminal punctuation (with or without a space) joins THAT sentence, which ends after the token ("…valley.&footnote{A note.} She…" → "…valley.&footnote{A note.}" / "She…"); mid-sentence it is inline | 106–109 |
 | 2026-08-28 | **v2.7.0**: RULE 11 — sentence-adjacent commands stand alone | an anchor-family command right after sentence-terminal punctuation is its own segment ("…accents. `&sketch#x{}` But…" → three segments); scenarios 070/080 re-curated to the new law | 070, 080, 102–105 |
 | 2026-08-28 | v2.6.1: a.m./p.m. is a SOFT abbreviation | lowercase after continues, CAPITAL after is a boundary | 097–101 |

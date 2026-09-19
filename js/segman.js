@@ -584,17 +584,23 @@ function markBoundaries(chars, regions) {
         if (chars[i] !== '&') {
             continue;
         }
-        if (commandKeywordAt(chars, i) === 'footnote') {
-            // RULE 12 (v2.8.0): a footnote belongs to the sentence it
-            // annotates. Mid-sentence it is inline like any command (atomic
-            // by RULE 10). Right after a sentence's terminator — with or
-            // without a whitespace gap — it must neither stand alone (RULE
-            // 11) nor open the next sentence: drop any boundary in the gap
-            // between the terminator and the token, and end the host
-            // sentence right after the token instead.
-            if (commandFollowsSentenceEnd(chars, i)) {
+        const kw = commandKeywordAt(chars, i);
+        if (commandAttaches(kw)) {
+            // RULE 12 (v2.8.0 footnotes; v2.9.0 &marker/&mark too): an
+            // annotation belongs to the sentence it follows. Right after a
+            // sentence's terminator ON ITS LINE — with or without a
+            // whitespace gap — it must neither stand alone (RULE 11) nor
+            // open the next sentence: drop any boundary in the gap between
+            // the terminator and the token, and end the host sentence right
+            // after the token instead. Across a line break it does NOT
+            // attach (a paragraph-leading annotation would swallow the
+            // paragraph break — v2.8.0's blind spot): the general rules
+            // take over, a footnote staying inline, a marker sole-line
+            // block or RULE 11 standalone. Mid-sentence every annotation is
+            // inline like any command (atomic by RULE 10).
+            if (commandFollowsSentenceEndOnLine(chars, i)) {
                 let ws = i;
-                while (ws > 0 && (chars[ws - 1] === ' ' || chars[ws - 1] === '\t' || chars[ws - 1] === '\r' || chars[ws - 1] === '\n')) {
+                while (ws > 0 && (chars[ws - 1] === ' ' || chars[ws - 1] === '\t' || chars[ws - 1] === '\r')) {
                     ws--;
                 }
                 for (let k = boundaries.length - 1; k >= 0; k--) {
@@ -604,10 +610,10 @@ function markBoundaries(chars, regions) {
                 }
                 const end = commandTokenEnd(chars, i);
                 if (end > 0 && end < chars.length) {
-                    boundaries.push({ pos: end, reason: 'after &footnote' });
+                    boundaries.push({ pos: end, reason: 'after &' + kw });
                 }
+                continue;
             }
-            continue;
         }
         if (!isBlockCommandAt(chars, i)) {
             continue;
@@ -617,7 +623,7 @@ function markBoundaries(chars, regions) {
         if (i > 0) {
             boundaries.push({ pos: i, reason: 'before &command' });
         }
-        const kw = commandKeywordAt(chars, i);
+        // kw: declared above (the RULE 12 attach check).
         const alwaysBlock = kw === 'title' || kw === 'part' || kw === 'chapter';
         if (alwaysBlock || commandIsSoleLineContent(chars, i)) {
             // Boundary after the command line (at its terminating newline).
@@ -698,6 +704,28 @@ function isBlockCommandAt(chars, i) {
 // neighbor — and folding it inline actually GLUED the neighbors together,
 // because the '&' after the period is not a capital, so the period boundary
 // never fired. A command mid-sentence still stays inline.
+// commandAttaches (RULE 12): the annotation commands that belong to the
+// sentence they follow — a footnote, and a marker in either spelling.
+function commandAttaches(kw) {
+    return kw === 'footnote' || kw === 'marker' || kw === 'mark';
+}
+
+// commandFollowsSentenceEndOnLine is commandFollowsSentenceEnd confined to
+// the token's own line: only spaces/tabs may sit between the closing
+// punctuation and the '&'. A line break in the gap means the annotation
+// leads a new line — it must not pull that line's break into the sentence
+// before it.
+function commandFollowsSentenceEndOnLine(chars, i) {
+    let k = i - 1;
+    while (k >= 0 && (chars[k] === ' ' || chars[k] === '\t' || chars[k] === '\r')) {
+        k--;
+    }
+    if (k < 0 || chars[k] === '\n') {
+        return false;
+    }
+    return commandFollowsSentenceEnd(chars, k + 1);
+}
+
 function commandFollowsSentenceEnd(chars, i) {
     let k = i - 1;
     while (k >= 0 && (chars[k] === ' ' || chars[k] === '\t' || chars[k] === '\r' || chars[k] === '\n')) {
@@ -767,31 +795,27 @@ function commandTokenEnd(chars, i) {
     while (k < chars.length && chars[k] !== '#' && chars[k] !== '{') {
         k++;
     }
-    const kw = chars.slice(i + 1, k).join('');
-    // 'end' is the one keyword whose token is complete with a bare #slug and
-    // no {...} groups (&end#slug). Its slug self-terminates on the slug
-    // charset [a-z0-9-] since no brace delimiter need follow.
-    let bareSlugToken = false;
-    // optional #slug
-    if (k < chars.length && chars[k] === '#') {
+    // #slugs (v2.9.0: one or more, each self-terminating on the slug
+    // charset [a-z0-9-]): a token is complete with a bare slug and no {...}
+    // groups, for EVERY keyword. Before, only &end#slug was — any other
+    // slug ran on until a '{' anywhere on its line, so a bare &marker#hard
+    // followed later on the line by &marker#beacon{weak} became one
+    // thousand-character "token" whose atomicity (RULE 10) erased every
+    // sentence boundary between them.
+    let sawSlug = false;
+    while (k < chars.length && chars[k] === '#') {
         k++;
-        if (kw === 'end') {
-            const start = k;
-            while (k < chars.length && /[a-z0-9-]/.test(chars[k])) {
-                k++;
-            }
-            if (k === start) {
-                return -1; // '&end#' with no slug is not a token
-            }
-            bareSlugToken = true;
-        } else {
-            while (k < chars.length && chars[k] !== '{' && chars[k] !== '\n') {
-                k++;
-            }
+        const start = k;
+        while (k < chars.length && /[a-z0-9-]/.test(chars[k])) {
+            k++;
         }
+        if (k === start) {
+            return -1; // '&x#' with no slug is not a token
+        }
+        sawSlug = true;
     }
-    // one or more {...} groups, back to back
-    let sawGroup = bareSlugToken;
+    // zero or more {...} groups, back to back
+    let sawGroup = sawSlug;
     while (k < chars.length && chars[k] === '{') {
         let depth = 0;
         while (k < chars.length) {
@@ -879,7 +903,7 @@ function splitAtBoundaries(chars, boundaries) {
 
 // segman version. Bumped by tools/bump-version.sh alongside go/segman.go,
 // rust/Cargo.toml, and the root VERSION.json so all four stay in lockstep.
-const VERSION = '2.8.0';
+const VERSION = '2.9.0';
 
 // Export for both Node (CommonJS) and the browser. In the browser we
 // expose a `window.segman` namespace AND keep `segment` as a top-level

@@ -563,27 +563,34 @@ fn mark_boundaries(chars: &[char], regions: &[NestedRegion]) -> Vec<BoundaryMark
         if chars[i] != '&' {
             continue;
         }
-        if command_keyword_at(&chars, i).as_deref() == Some("footnote") {
-            // RULE 12 (v2.8.0): a footnote belongs to the sentence it
-            // annotates. Mid-sentence it is inline like any command (atomic
-            // by RULE 10). Right after a sentence's terminator — with or
-            // without a whitespace gap — it must neither stand alone (RULE
-            // 11) nor open the next sentence: drop any boundary in the gap
-            // between the terminator and the token, and end the host
-            // sentence right after the token instead.
-            if command_follows_sentence_end(&chars, i) {
+        let kw = command_keyword_at(&chars, i);
+        if kw.as_deref().map_or(false, command_attaches) {
+            // RULE 12 (v2.8.0 footnotes; v2.9.0 &marker/&mark too): an
+            // annotation belongs to the sentence it follows. Right after a
+            // sentence's terminator ON ITS LINE — with or without a
+            // whitespace gap — it must neither stand alone (RULE 11) nor
+            // open the next sentence: drop any boundary in the gap between
+            // the terminator and the token, and end the host sentence right
+            // after the token instead. Across a line break it does NOT
+            // attach (a paragraph-leading annotation would swallow the
+            // paragraph break — v2.8.0's blind spot): the general rules
+            // take over, a footnote staying inline, a marker sole-line
+            // block or RULE 11 standalone. Mid-sentence every annotation is
+            // inline like any command (atomic by RULE 10).
+            if command_follows_sentence_end_on_line(&chars, i) {
                 let mut ws = i;
-                while ws > 0 && matches!(chars[ws - 1], ' ' | '\t' | '\r' | '\n') {
+                while ws > 0 && matches!(chars[ws - 1], ' ' | '\t' | '\r') {
                     ws -= 1;
                 }
                 boundaries.retain(|b| b.pos < ws || b.pos > i);
                 if let Some(end) = command_token_end(&chars, i) {
                     if end < chars.len() {
-                        boundaries.push(BoundaryMark { pos: end, reason: "after &footnote" });
+                        let reason = if kw.as_deref() == Some("footnote") { "after &footnote" } else { "after &marker" };
+                        boundaries.push(BoundaryMark { pos: end, reason });
                     }
                 }
+                continue;
             }
-            continue;
         }
         if !is_block_command_at(&chars, i) {
             continue;
@@ -673,6 +680,28 @@ fn is_block_command_at(chars: &[char], i: usize) -> bool {
 /// neighbor — and folding it inline actually GLUED the neighbors together,
 /// because the '&' after the period is not a capital, so the period
 /// boundary never fired. A command mid-sentence still stays inline.
+/// command_attaches (RULE 12): the annotation commands that belong to the
+/// sentence they follow — a footnote, and a marker in either spelling.
+fn command_attaches(kw: &str) -> bool {
+    kw == "footnote" || kw == "marker" || kw == "mark"
+}
+
+/// command_follows_sentence_end_on_line is command_follows_sentence_end
+/// confined to the token's own line: only spaces/tabs may sit between the
+/// closing punctuation and the '&'. A line break in the gap means the
+/// annotation leads a new line — it must not pull that line's break into
+/// the sentence before it.
+fn command_follows_sentence_end_on_line(chars: &[char], i: usize) -> bool {
+    let mut k = i as isize - 1;
+    while k >= 0 && matches!(chars[k as usize], ' ' | '\t' | '\r') {
+        k -= 1;
+    }
+    if k < 0 || chars[k as usize] == '\n' {
+        return false;
+    }
+    command_follows_sentence_end(chars, (k + 1) as usize)
+}
+
 fn command_follows_sentence_end(chars: &[char], i: usize) -> bool {
     let mut k = i as isize - 1;
     while k >= 0 && matches!(chars[k as usize], ' ' | '\t' | '\r' | '\n') {
@@ -744,31 +773,27 @@ fn command_token_end(chars: &[char], i: usize) -> Option<usize> {
     while k < chars.len() && chars[k] != '#' && chars[k] != '{' {
         k += 1;
     }
-    let kw: String = chars[i + 1..k].iter().collect();
-    // 'end' is the one keyword whose token is complete with a bare #slug and
-    // no {...} groups (&end#slug). Its slug self-terminates on the slug
-    // charset [a-z0-9-] since no brace delimiter need follow.
-    let mut bare_slug_token = false;
-    // optional #slug
-    if k < chars.len() && chars[k] == '#' {
+    // #slugs (v2.9.0: one or more, each self-terminating on the slug
+    // charset [a-z0-9-]): a token is complete with a bare slug and no {...}
+    // groups, for EVERY keyword. Before, only &end#slug was — any other
+    // slug ran on until a '{' anywhere on its line, so a bare &marker#hard
+    // followed later on the line by &marker#beacon{weak} became one
+    // thousand-character "token" whose atomicity (RULE 10) erased every
+    // sentence boundary between them.
+    let mut saw_slug = false;
+    while k < chars.len() && chars[k] == '#' {
         k += 1;
-        if kw == "end" {
-            let start = k;
-            while k < chars.len() && is_slug_char(chars[k]) {
-                k += 1;
-            }
-            if k == start {
-                return None; // '&end#' with no slug is not a token
-            }
-            bare_slug_token = true;
-        } else {
-            while k < chars.len() && chars[k] != '{' && chars[k] != '\n' {
-                k += 1;
-            }
+        let start = k;
+        while k < chars.len() && is_slug_char(chars[k]) {
+            k += 1;
         }
+        if k == start {
+            return None; // '&x#' with no slug is not a token
+        }
+        saw_slug = true;
     }
-    // one or more {...} groups, back to back
-    let mut saw_group = bare_slug_token;
+    // zero or more {...} groups, back to back
+    let mut saw_group = saw_slug;
     while k < chars.len() && chars[k] == '{' {
         let mut depth = 0;
         while k < chars.len() {

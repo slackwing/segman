@@ -86,3 +86,13 @@
 {"id": "107", "context": "Gap here. \u0026footnote{Spaced note.} Then more.", "expected": "Gap here. \u0026footnote{Spaced note.}"}
 {"id": "108", "context": "\"Quoted.\"\u0026footnote{After a quote.} Last one.", "expected": "\"Quoted.\"\u0026footnote{After a quote.}"}
 {"id": "109", "context": "Mid,\u0026footnote{inline} way through. Next.", "expected": "Mid,\u0026footnote{inline} way through."}
+{"id": "110", "context": "Merely uncommon. \u0026marker#hard I smiled writing that. Then more.", "expected": "Merely uncommon. \u0026marker#hard"}
+{"id": "111", "context": "Some things... \u0026mark#pressure{weak} But how do I tell this story?", "expected": "Some things... \u0026mark#pressure{weak}"}
+{"id": "112", "context": "Some \u0026marker#hard words. More words here. Final words \u0026marker#beacon{weak} end.", "expected": "More words here."}
+{"id": "113", "context": "The \u0026marker#twist door opened. Next.", "expected": "The \u0026marker#twist door opened."}
+{"id": "114", "context": "Last line.\n\u0026marker#x\n\tNext para.", "expected": "\u0026marker#x"}
+{"id": "115", "context": "Last one.\n\t\u0026footnote{Lead note.} Next para. And more.", "expected": "Last one."}
+{"id": "116", "context": "I smiled \u0026marker#hard. Next.", "expected": "I smiled \u0026marker#hard."}
+{"id": "117", "context": "Solemn optimism. \u0026marker#picture#sconce Then.", "expected": "Solemn optimism. \u0026marker#picture#sconce"}
+{"id": "118", "context": "Ended with a mark. \u0026marker#sconce\n\t\u0026marker#weird Because I remember. Next.", "expected": "\u0026marker#weird Because I remember."}
+{"id": "119", "context": "\"Quoted?\" \u0026marker#aside Then more.", "expected": "\"Quoted?\" \u0026marker#aside"}
